@@ -32,3 +32,15 @@ def test_clearance_is_deliberately_fail_closed_until_proven():
 def test_no_backend_or_fake_deployment_constants_in_contract():
     assert "CONTRACT_ADDRESS" not in SOURCE
     assert "localhost" not in SOURCE
+
+
+def test_cycle_check_searches_from_child_toward_parent():
+    block = SOURCE[SOURCE.index("def _would_create_cycle"):SOURCE.index("def _attach_cause")]
+    assert "pending = [child_id]" in block
+    assert "current == parent_id" in block
+
+
+def test_graph_freezes_before_active_recall_propagation():
+    assert 'containment graph is frozen after the first recall is sealed' in SOURCE
+    seal = SOURCE[SOURCE.index("def seal_recall"):SOURCE.index("def assess_component")]
+    assert "self.graph_frozen = True" in seal
