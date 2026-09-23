@@ -49,6 +49,8 @@ button, input, textarea { font: inherit; }
   background: rgba(25,12,37,.94);
 }
 .brand { display:flex; align-items:center; gap:12px; font-weight:900; letter-spacing:.15em; }
+.brand-home { border:0; padding:0; color:var(--text); background:transparent; cursor:pointer; }
+.brand-home:hover { color:var(--lemon); }
 .brand-mark {
   width: 36px; height:36px; border-radius:11px;
   display:grid; place-items:center;

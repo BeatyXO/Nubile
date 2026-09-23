@@ -123,10 +123,10 @@ export function NubileApp() {
     <div className="shell">
       <header className="topbar">
         <div className="wrap" style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div className="brand">
+          <button className="brand brand-home" onClick={() => navigate("overview")} aria-label="Open NUBILE home page">
             <div className="brand-mark"><Network size={19}/></div>
             NUBILE
-          </div>
+          </button>
           <nav className="nav">
             <button onClick={() => navigate("overview")}>Protocol</button>
             <button onClick={() => navigate("component")}>Components</button>
