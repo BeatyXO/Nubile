@@ -1,11 +1,14 @@
 {
-  "canonicalStatus": "UNDEPLOYED",
+  "canonicalStatus": "FINALIZED",
   "network": "studionet",
-  "contract": null,
-  "deploymentTransaction": null,
-  "sourceCommit": null,
-  "sourceSha256": null,
-  "deployedSourceVerified": false,
-  "schemaVerified": false,
-  "note": "Intentionally blank until a real finalized StudioNet deployment and source-parity proof exist."
+  "contract": "0x393D5D20538c8eAb18576eBC63aaAFfd42e1Fa84",
+  "deploymentTransaction": "0x12c7f33abcd89d4cc4c08828355899b4763a4cbe8b84cb96b18360f7c86c7dca",
+  "sourceCommit": "cfcba5e418c3514c59bae1aa727f349a9569136d",
+  "sourceSha256": "c14048700df41bb72083b28815d5c73f08385c64f6c81149ef3bddbec6bdf1bf",
+  "deployedSourceVerified": true,
+  "schemaVerified": true,
+  "validatorCount": 5,
+  "deploymentResult": "MAJORITY_AGREE",
+  "genvmExecution": "SUCCESS",
+  "note": "Verified from the StudioNet deployment receipt and getContractCode/getContractSchema parity checks."
 }

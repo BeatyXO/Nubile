@@ -11,8 +11,10 @@
 | Transaction finality reconciliation | `submitAndReconcile`, frontend tests | PROVEN DIRECT |
 | Real recall corpus | `fixtures/recalls/MANIFEST.md` | NOT PROVEN (exact bytes not yet checked in) |
 | Full 30-case Direct Mode matrix | `tests/direct/` | NOT PROVEN |
-| StudioNet deployment | `DEPLOYMENT.json` | NOT PROVEN |
-| Live lifecycle | No canonical transaction records yet | NOT PROVEN |
+| StudioNet deployment | `DEPLOYMENT.json`, `docs/LIVE_EVIDENCE.md` | PROVEN LIVE |
+| Callable schema and source parity | `genlayer code/schema`, SHA-256 `c14048700df41bb72083b28815d5c73f08385c64f6c81149ef3bddbec6bdf1bf` | PROVEN LIVE |
+| Deterministic live registration/BOM/recall writes | `docs/LIVE_EVIDENCE.md` | PROVEN LIVE |
+| Live seal, applicability, propagation, and release lifecycle | Seal failed closed at validator web boundary | NOT PROVEN |
 
 No contract address, transaction hash, validator count, finality, source hash,
 or live result is asserted until independently observed.
