@@ -25,7 +25,8 @@ def test_release_is_derived_from_active_recall_count():
 
 def test_clearance_recomputes_and_reconciles_per_recall():
     block = SOURCE[SOURCE.index("def finalize_clearance"):SOURCE.index("@gl.public.view", SOURCE.index("def finalize_clearance"))]
-    assert "_recompute_reached" in block
+    assert "clearance_cursor" in block
+    assert "every directly affected root must be cleared first" in block
     assert "recall_active[key] = False" in block
     assert "active recall count invariant violated" in block
 
@@ -71,9 +72,30 @@ def test_multi_recall_cause_keys_are_isolated():
 
 def test_clearance_only_removes_unreachable_bindings_for_same_recall():
     block = SOURCE[SOURCE.index("def finalize_clearance"):SOURCE.index("@gl.public.view", SOURCE.index("def finalize_clearance"))]
-    assert "component_id not in reached" in block
+    assert "cursor < int(self.component_count)" in block
     assert "self.recall_active[key] = False" in block
     assert "component.active_recall_count" in block
+
+def test_clearance_requires_all_roots_and_is_bounded():
+    block = SOURCE[SOURCE.index("def finalize_clearance"):SOURCE.index("@gl.public.view", SOURCE.index("def finalize_clearance"))]
+    assert "max_steps" in block
+    assert "every directly affected root must be cleared first" in block
+    assert "clearance_cursor" in block
+
+def test_clearance_cannot_begin_before_initial_propagation():
+    block = SOURCE[SOURCE.index("def set_clearance_bulletin"):SOURCE.index("def clear_direct_component")]
+    assert "initial propagation must complete before clearance" in block
+
+def test_bom_parent_authorization_and_trusted_authority_allowlist():
+    assert "only the parent creator may attach children" in SOURCE
+    assert "bulletin authority is not trusted" in SOURCE
+    assert "nhtsa.gov" in SOURCE and "cpsc.gov" in SOURCE
+
+def test_seal_and_clearance_setup_only_freeze_pins():
+    seal = SOURCE[SOURCE.index("def seal_recall"):SOURCE.index("def assess_component")]
+    clearance = SOURCE[SOURCE.index("def set_clearance_bulletin"):SOURCE.index("def clear_direct_component")]
+    assert "_fetch_exact" not in seal
+    assert "_fetch_exact" not in clearance
 
 def test_topology_and_fanout_guards_are_explicit():
     block = SOURCE[SOURCE.index("def add_containment"):SOURCE.index("def create_recall")]

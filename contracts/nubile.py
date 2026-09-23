@@ -25,6 +25,7 @@ MAX_RECALLS = 2_000
 MAX_PARENTS = 24
 MAX_CHILDREN = 64
 MAX_PROPAGATION_STEPS = 64
+MAX_CLEARANCE_STEPS = 64
 
 RECALL_DRAFT = 1
 RECALL_ACTIVE = 2
@@ -75,6 +76,8 @@ class Recall:
     impacted_count: u32
     clearance_url: str
     clearance_sha256: str
+    clearance_cursor: u32
+    clearance_removed_count: u32
 
 
 def _clean(value: str) -> str:
@@ -101,6 +104,15 @@ def _https(value: str) -> str:
     url = str(value).strip()
     if not url.startswith("https://") or len(url) > MAX_URL or any(ch.isspace() for ch in url):
         raise gl.vm.UserError("source must be a bounded whitespace-free https:// URL")
+    return url
+
+
+def _trusted_authority(value: str) -> str:
+    url = _https(value)
+    host = url[len("https://"):].split("/", 1)[0].split(":", 1)[0].lower()
+    trusted = ("nhtsa.gov", "cpsc.gov", "toyota.com", "honda.com", "ford.com", "gm.com")
+    if not any(host == domain or host.endswith("." + domain) for domain in trusted):
+        raise gl.vm.UserError("bulletin authority is not trusted")
     return url
 
 
@@ -365,6 +377,8 @@ class NUBILE(gl.Contract):
             raise gl.vm.UserError("containment graph is frozen after the first recall is sealed")
         parent = self._component(parent_id)
         child = self._component(child_id)
+        if parent.creator != gl.message.sender_address:
+            raise gl.vm.UserError("only the parent creator may attach children")
         if parent.graph_locked or child.graph_locked:
             raise gl.vm.UserError("containment is frozen once a node participates in an active recall")
         parents = self._parents(int(child_id))
@@ -387,7 +401,7 @@ class NUBILE(gl.Contract):
         if int(self.recall_count) >= MAX_RECALLS:
             raise gl.vm.UserError("recall capacity reached")
         title_clean = _required(title, MAX_NAME, "title")
-        url = _https(bulletin_url)
+        url = _trusted_authority(bulletin_url)
         digest = _hex_sha256(bulletin_sha256)
         rule = _required(applicability_rule, MAX_RULE, "applicability_rule")
         rid = u256(int(self.recall_count) + 1)
@@ -398,6 +412,7 @@ class NUBILE(gl.Contract):
             definition_hash=definition_hash, status=u8(RECALL_DRAFT),
             queue_head=u32(0), queue_tail=u32(0), directly_affected_count=u32(0),
             impacted_count=u32(0), clearance_url="", clearance_sha256=ZERO_HASH,
+            clearance_cursor=u32(0), clearance_removed_count=u32(0),
         )
         self.recall_count = rid
         return rid
@@ -409,8 +424,6 @@ class NUBILE(gl.Contract):
             raise gl.vm.UserError("only recall creator may seal")
         if int(recall.status) != RECALL_DRAFT:
             raise gl.vm.UserError("recall already sealed")
-        # Fetch exact bytes at seal time so a bad pin fails before adjudication.
-        self._fetch_exact(recall.bulletin_url, recall.bulletin_sha256)
         self.graph_frozen = True
         recall.status = u8(RECALL_ACTIVE)
         return recall.definition_hash
@@ -469,9 +482,10 @@ class NUBILE(gl.Contract):
             raise gl.vm.UserError("only recall creator may set clearance bulletin")
         if int(recall.status) != RECALL_ACTIVE:
             raise gl.vm.UserError("recall must be active")
-        recall.clearance_url = _https(url)
+        if int(recall.queue_head) < int(recall.queue_tail):
+            raise gl.vm.UserError("initial propagation must complete before clearance")
+        recall.clearance_url = _trusted_authority(url)
         recall.clearance_sha256 = _hex_sha256(sha256)
-        self._fetch_exact(recall.clearance_url, recall.clearance_sha256)
         recall.status = u8(RECALL_CLEARING)
 
     @gl.public.write
@@ -480,9 +494,13 @@ class NUBILE(gl.Contract):
         component = self._component(component_id)
         if int(recall.status) != RECALL_CLEARING:
             raise gl.vm.UserError("recall has no active clearance bulletin")
+        if int(recall.queue_head) < int(recall.queue_tail):
+            raise gl.vm.UserError("initial propagation must complete before clearance")
         key = self._cause_key(int(recall_id), int(component_id))
         if int(self.direct_finding.get(key, u8(0))) != VERDICT_AFFECTED:
             raise gl.vm.UserError("component was not directly classified AFFECTED")
+        if int(self.clearance_finding.get(key, u8(0))) == CLEARANCE_CLEARED:
+            return "CLEARED"
         result = self._semantic(component, recall, True)
         if str(result["verdict"]) != "CLEARED":
             return str(result["verdict"])
@@ -508,44 +526,43 @@ class NUBILE(gl.Contract):
         return reached
 
     @gl.public.write
-    def finalize_clearance(self, recall_id: u256) -> dict:
+    def finalize_clearance(self, recall_id: u256, max_steps: u16) -> dict:
         recall = self._recall(recall_id)
         if recall.creator != gl.message.sender_address:
             raise gl.vm.UserError("only recall creator may finalize clearance")
         if int(recall.status) != RECALL_CLEARING:
             raise gl.vm.UserError("recall is not clearing")
-        reached = self._recompute_reached(int(recall_id))
-        removed = 0
-        kept = 0
+        limit = int(max_steps)
+        if limit <= 0 or limit > MAX_CLEARANCE_STEPS:
+            raise gl.vm.UserError("max_steps out of bounds")
         for component_id in range(1, int(self.component_count) + 1):
             key = self._cause_key(int(recall_id), component_id)
-            active = bool(self.recall_active.get(key, False))
-            if active and component_id not in reached:
+            if (int(self.direct_finding.get(key, u8(0))) == VERDICT_AFFECTED
+                    and int(self.clearance_finding.get(key, u8(0))) != CLEARANCE_CLEARED):
+                raise gl.vm.UserError("every directly affected root must be cleared first")
+        processed = 0
+        removed = 0
+        cursor = int(recall.clearance_cursor)
+        while processed < limit and cursor < int(self.component_count):
+            cursor += 1
+            key = self._cause_key(int(recall_id), cursor)
+            if bool(self.recall_active.get(key, False)):
                 self.recall_active[key] = False
-                component = self._component(u256(component_id))
+                component = self._component(u256(cursor))
                 count = int(component.active_recall_count)
                 if count <= 0:
                     raise gl.vm.UserError("active recall count invariant violated")
                 component.active_recall_count = u16(count - 1)
                 removed += 1
-            elif active:
-                kept += 1
-        recall.queue_head = u32(0)
-        recall.queue_tail = u32(0)
-        recall.impacted_count = u32(0)
-        for component_id in range(1, int(self.component_count) + 1):
-            self.recall_seen[self._cause_key(int(recall_id), component_id)] = False
-        for component_id in reached:
-            key = self._cause_key(int(recall_id), component_id)
-            if bool(self.recall_active.get(key, False)):
-                recall.impacted_count = u32(int(recall.impacted_count) + 1)
-        for component_id in range(1, int(self.component_count) + 1):
-            key = self._cause_key(int(recall_id), component_id)
-            if (int(self.direct_finding.get(key, u8(0))) == VERDICT_AFFECTED
-                    and int(self.clearance_finding.get(key, u8(0))) != CLEARANCE_CLEARED):
-                self._enqueue_once(recall, component_id)
-        recall.status = u8(RECALL_CLEARED)
-        return {"removed": removed, "kept": kept, "reachable": len(reached), "complete": True}
+            processed += 1
+        recall.clearance_cursor = u32(cursor)
+        recall.clearance_removed_count = u32(int(recall.clearance_removed_count) + removed)
+        complete = cursor >= int(self.component_count)
+        if complete:
+            recall.impacted_count = u32(0)
+            recall.status = u8(RECALL_CLEARED)
+        return {"processed": processed, "cursor": cursor, "removed": removed,
+                "total_removed": int(recall.clearance_removed_count), "complete": complete}
 
     @gl.public.view
     def get_component(self, component_id: u256) -> dict:
@@ -578,6 +595,8 @@ class NUBILE(gl.Contract):
             "status": int(r.status), "queue_head": int(r.queue_head), "queue_tail": int(r.queue_tail),
             "directly_affected_count": int(r.directly_affected_count), "impacted_count": int(r.impacted_count),
             "clearance_url": r.clearance_url, "clearance_sha256": r.clearance_sha256,
+            "clearance_cursor": int(r.clearance_cursor),
+            "clearance_removed_count": int(r.clearance_removed_count),
         }
 
     @gl.public.view

@@ -236,7 +236,7 @@ function OperationsForm({ configured, busy, onSubmit }: { configured:boolean; bu
       <button className="primary" disabled={!configured||busy} onClick={()=>void onSubmit("seal_recall",[id])}>Seal recall</button>
       <button className="secondary" disabled={!configured||busy} onClick={()=>void onSubmit("assess_component",[id,cid])}>Assess component</button>
       <button className="secondary" disabled={!configured||busy} onClick={()=>void onSubmit("propagate",[id,Number(steps)])}>Propagate cursor</button>
-      <button className="secondary" disabled={!configured||busy} onClick={()=>void onSubmit("finalize_clearance",[id])}>Finalize clearance</button>
+      <button className="secondary" disabled={!configured||busy} onClick={()=>void onSubmit("finalize_clearance",[id,Number(steps)])}>Finalize clearance</button>
     </div>
     <div className="notice full"><ShieldCheck size={14} style={{display:"inline",marginRight:8,verticalAlign:-2}}/>Assessment is consensus-backed; graph traversal and release remain deterministic contract operations.</div>
   </div>;
