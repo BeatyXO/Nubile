@@ -202,10 +202,12 @@ class NUBILE(gl.Contract):
 
     component_count: u256
     recall_count: u256
+    graph_frozen: bool
 
     def __init__(self):
         self.component_count = u256(0)
         self.recall_count = u256(0)
+        self.graph_frozen = False
 
     def _component(self, component_id: u256) -> Component:
         cid = int(component_id)
@@ -234,13 +236,14 @@ class NUBILE(gl.Contract):
     def _would_create_cycle(self, parent_id: int, child_id: int) -> bool:
         if parent_id == child_id:
             return True
-        # If parent is already reachable downward from child, adding child -> parent closes a cycle.
-        pending = [parent_id]
+        # Edges point parent -> child. Adding parent -> child creates a cycle only
+        # when the proposed parent is already reachable downward from the child.
+        pending = [child_id]
         seen = {}
         steps = 0
         while pending:
             current = pending.pop()
-            if current == child_id:
+            if current == parent_id:
                 return True
             marker = str(current)
             if marker in seen:
@@ -357,6 +360,8 @@ class NUBILE(gl.Contract):
 
     @gl.public.write
     def add_containment(self, parent_id: u256, child_id: u256) -> None:
+        if self.graph_frozen:
+            raise gl.vm.UserError("containment graph is frozen after the first recall is sealed")
         parent = self._component(parent_id)
         child = self._component(child_id)
         if parent.graph_locked or child.graph_locked:
@@ -405,6 +410,7 @@ class NUBILE(gl.Contract):
             raise gl.vm.UserError("recall already sealed")
         # Fetch exact bytes at seal time so a bad pin fails before adjudication.
         self._fetch_exact(recall.bulletin_url, recall.bulletin_sha256)
+        self.graph_frozen = True
         recall.status = u8(RECALL_ACTIVE)
         return recall.definition_hash
 
@@ -547,4 +553,8 @@ class NUBILE(gl.Contract):
 
     @gl.public.view
     def stats(self) -> dict:
-        return {"components": int(self.component_count), "recalls": int(self.recall_count)}
+        return {
+            "components": int(self.component_count),
+            "recalls": int(self.recall_count),
+            "graph_frozen": bool(self.graph_frozen),
+        }
