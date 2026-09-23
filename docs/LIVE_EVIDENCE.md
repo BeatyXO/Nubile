@@ -7,7 +7,18 @@ Contract: `0xc53ea93EC011C4f8a54495bF6825e330f8475e00`
 | Operation | Transaction | Observed result |
 |---|---|---|
 | Deploy exact `contracts/nubile.py` | `0xb4f6f2f245d39184cc4eb9bee6886170ffb9c00c0378ee78506dbabafcdfa526` | FINALIZED, MAJORITY_AGREE, GenVM SUCCESS, source SHA-256 `70d2acb782f83106e6555f92138d0bb65581c153db36ed55f9ce465d64b9635e` |
-No post-deployment lifecycle has been claimed for this replacement address yet.
+| Register component 1 | `0x8da6cef19c23aa423e09ad77e1b8dd746b02df8af37c8f6ff5db04598ded520f` | FINALIZED, component 1 |
+| Register component 2 | `0x16a04f9c162dd1dd84397a7a747b69d9561c2143c3e1aeb1aa14f38433a5ca60` | FINALIZED, component 2 |
+| Add parent 2 -> child 1 | `0x079ffc29f2e769c2a8c7ec58d4c85c7273c57e57e534484bd010bebfa26fcdf2` | FINALIZED, MAJORITY_AGREE |
+| Create recall 1 | `0x3deacf2dc1ca232608e7e139e173f6e7a21326b17f9dddb4e98321b8b4cec20a` | FINALIZED, recall 1 |
+| Seal recall 1 | `0xcc44aa0d7a6a79a9e49057738409d7dc79d2dce7e6f82fe1b5e12bd31602c0c8` | FINALIZED |
+
+Fresh post-seal reads on this canonical address:
+
+- `stats()` -> `components=2`, `recalls=1`, `graph_frozen=true`.
+- `get_parents(1)` -> `[2]`.
+- `get_recall(1)` -> `status=2 (ACTIVE)`, queue `0/0`, impacted `0`, with the
+  frozen authoritative URL and SHA-256.
 
 ## Historical deployments
 
