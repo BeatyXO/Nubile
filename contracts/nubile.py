@@ -480,8 +480,11 @@ class NUBILE(gl.Contract):
         recall = self._recall(recall_id)
         if recall.creator != gl.message.sender_address:
             raise gl.vm.UserError("only recall creator may set clearance bulletin")
-        if int(recall.status) != RECALL_ACTIVE:
-            raise gl.vm.UserError("recall must be active")
+        if int(recall.status) == RECALL_CLEARING:
+            if int(recall.clearance_cursor) != 0:
+                raise gl.vm.UserError("clearance bulletin is frozen after reconciliation starts")
+        elif int(recall.status) != RECALL_ACTIVE:
+            raise gl.vm.UserError("recall must be active or clearing before reconciliation")
         if int(recall.queue_head) < int(recall.queue_tail):
             raise gl.vm.UserError("initial propagation must complete before clearance")
         recall.clearance_url = _trusted_authority(url)

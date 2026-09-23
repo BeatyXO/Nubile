@@ -10,6 +10,8 @@ import {
 } from "@/lib/genlayer";
 
 type Stats = { components: number; recalls: number };
+type ComponentRecord = { component_id:number; name:string; kind:string; external_key:string; definition:string; active_recall_count:number; graph_locked:boolean };
+type RecallRecord = { recall_id:number; title:string; bulletin_url:string; bulletin_sha256:string; status:number; queue_head:number; queue_tail:number; directly_affected_count:number; impacted_count:number; clearance_cursor:number };
 type View = "overview" | "component" | "bom" | "recall" | "operations";
 
 function shortAddress(address: string) {
@@ -26,11 +28,24 @@ export function NubileApp() {
   const [txHash, setTxHash] = useState("");
   const [txState, setTxState] = useState<"idle" | "pending" | "success" | "failed">("idle");
   const [busy, setBusy] = useState(false);
+  const [components, setComponents] = useState<ComponentRecord[]>([]);
+  const [recalls, setRecalls] = useState<RecallRecord[]>([]);
+  const [relations, setRelations] = useState<Record<number, {parents:number[];children:number[]}>>({});
 
   async function refresh() {
     if (!configured) return;
     try {
-      setStats(await readContract<Stats>("stats"));
+      const nextStats = await readContract<Stats>("stats");
+      setStats(nextStats);
+      const loadedComponents: ComponentRecord[] = [];
+      const loadedRelations: Record<number, {parents:number[];children:number[]}> = {};
+      for (let id = 1; id <= nextStats.components; id += 1) {
+        loadedComponents.push(await readContract<ComponentRecord>("get_component", [id]));
+        loadedRelations[id] = { parents: await readContract<number[]>("get_parents", [id]), children: await readContract<number[]>("get_children", [id]) };
+      }
+      const loadedRecalls: RecallRecord[] = [];
+      for (let id = 1; id <= nextStats.recalls; id += 1) loadedRecalls.push(await readContract<RecallRecord>("get_recall", [id]));
+      setComponents(loadedComponents); setRelations(loadedRelations); setRecalls(loadedRecalls);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to read StudioNet state.");
     }
@@ -57,7 +72,7 @@ export function NubileApp() {
     setBusy(true); setError(""); setTxHash(""); setTxState("pending");
     try {
       const result = await submitAndReconcile(client, functionName, args);
-      setTxHash(result.hash); setTxState("success");
+      setTxHash(result.hash); setTxState("success"); await refresh();
     } catch (e) {
       setTxState("failed");
       setError(e instanceof Error ? e.message : "Transaction failed before finality.");
@@ -143,7 +158,7 @@ export function NubileApp() {
               <span className="status-pill">{status}</span>
             </div>
             <div className="panel-body">
-              {view === "overview" && <Overview configured={configured}/>}
+              {view === "overview" && <Overview configured={configured} components={components} recalls={recalls} relations={relations}/>} 
               {view === "component" && <ComponentForm configured={configured} busy={busy} onSubmit={write}/>}
               {view === "bom" && <BomForm configured={configured} busy={busy} onSubmit={write}/>}
               {view === "recall" && <RecallForm configured={configured} busy={busy} onSubmit={write}/>}
@@ -163,17 +178,27 @@ export function NubileApp() {
   );
 }
 
-function Overview({ configured }: { configured: boolean }) {
+function Overview({ configured, components, recalls, relations }: { configured:boolean; components:ComponentRecord[]; recalls:RecallRecord[]; relations:Record<number,{parents:number[];children:number[]}> }) {
   return (
     <div className="empty">
       <div className="empty-inner">
         <div className="empty-icon"><Waypoints size={24}/></div>
-        <h3>{configured ? "No graph snapshot loaded yet" : "Canonical deployment not configured"}</h3>
+        <h3>{configured ? `${components.length} components · ${recalls.length} recalls` : "Canonical deployment not configured"}</h3>
         <p>
           {configured
-            ? "Use the registration and recall workflows, then load components from StudioNet. The frontend never substitutes demo records for contract state."
+            ? "Live state loaded from the Intelligent Contract. Direct causes are assessed findings; propagated quarantine follows the immutable parent → child graph."
             : "The interface is intentionally empty rather than showing mock recalls. After Codex finishes Direct Mode, deploys the exact source, and sets NEXT_PUBLIC_CONTRACT_ADDRESS, this surface becomes the live containment graph."}
         </p>
+        {configured && <div style={{textAlign:"left",marginTop:24,width:"100%"}}>
+          {components.map((component) => <div key={component.component_id} className="notice" style={{marginBottom:8}}>
+            <strong>#{component.component_id} {component.name}</strong> · {component.kind} · {component.active_recall_count ? "QUARANTINED" : "RELEASE ELIGIBLE"}<br/>
+            <small>Parents: {(relations[component.component_id]?.parents ?? []).join(", ") || "—"} · Children: {(relations[component.component_id]?.children ?? []).join(", ") || "—"} · {component.graph_locked ? "graph locked" : "graph open"}</small>
+          </div>)}
+          {recalls.map((recall) => <div key={recall.recall_id} className="notice" style={{marginBottom:8}}>
+            <strong>Recall #{recall.recall_id}: {recall.title}</strong> · status {recall.status} · impacted {recall.impacted_count}<br/>
+            <small>Source: {recall.bulletin_url} · SHA-256: {recall.bulletin_sha256} · propagation {recall.queue_head}/{recall.queue_tail} · clearance {recall.clearance_cursor}</small>
+          </div>)}
+        </div>}
       </div>
     </div>
   );
