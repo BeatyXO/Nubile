@@ -10,11 +10,12 @@
 | Frontend no-fake empty state | `NubileApp.tsx`, source-integrity tests | PROVEN STATIC |
 | Transaction finality reconciliation | `submitAndReconcile`, frontend tests | PROVEN STATIC |
 | Real recall corpus | `fixtures/recalls/MANIFEST.md`, checked-in NHTSA capture | PROVEN STATIC (fixture capture; not live adjudication) |
-| Full 30-case Direct Mode matrix | `tests/direct/` | NOT PROVEN |
+| Direct Mode contract behavior | `tests/direct/test_direct_mode.py` | PROVEN DIRECT (3 passed) |
+| Static source inspection suite | `tests/direct/test_pure_helpers.py` | PROVEN STATIC (18 passed) |
 | StudioNet deployment | `DEPLOYMENT.json`, `docs/LIVE_EVIDENCE.md` | PROVEN LIVE |
-| Callable schema and source parity | `genlayer code/schema`, SHA-256 `599cf6f9c3c0c576fce638d2be73fa3ddcdb2e94a9407af79642ebd043b80e95` | PROVEN LIVE |
-| Deterministic live registration/BOM/recall writes | `docs/LIVE_EVIDENCE.md` | PROVEN LIVE |
-| Live seal, applicability, propagation, and release lifecycle | Seal failed closed at validator web boundary | NOT PROVEN |
+| Callable schema and source parity | `genlayer code/schema`, SHA-256 `d93cd0089abf2e359c1c4a125db9378c224658b270d24055f57dd5c05365caa8` | PROVEN LIVE |
+| Deterministic live registration/BOM/recall/seal lifecycle | Fresh hashes in `docs/LIVE_EVIDENCE.md` | PROVEN LIVE |
+| Live semantic applicability, propagation, and release lifecycle | Validator-accessible source requirement | BLOCKED EXTERNALLY |
 
 No contract address, transaction hash, validator count, finality, source hash,
 or live result is asserted until independently observed.

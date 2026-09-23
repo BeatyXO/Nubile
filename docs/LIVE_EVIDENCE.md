@@ -1,10 +1,15 @@
 # StudioNet evidence
 
-Canonical deployment: `0x53D66e8f27DE1ef60120a51eF78F2d38f81422d9`
+Canonical deployment: `0x18D0f312C127542Ca443f8f065c679B5938b7de3`
 
 | Operation | Transaction | Observed result |
 |---|---|---|
-| Deploy exact `contracts/nubile.py` | `0x7b7baecaa4957515361dde769d1d74aac9a7f9e9b7cc9e10b00c004465d64bac` | FINALIZED, MAJORITY_AGREE, GenVM SUCCESS, 5 validators, source SHA-256 `599cf6f9c3c0c576fce638d2be73fa3ddcdb2e94a9407af79642ebd043b80e95` |
+| Deploy exact `contracts/nubile.py` | `0x685e12497f7f9ebf85d0d2b1cbc2985c8b6fd452ea4a0893f93cfdf7c03c901c` | FINALIZED, MAJORITY_AGREE, GenVM SUCCESS, 5 validators, source SHA-256 `d93cd0089abf2e359c1c4a125db9378c224658b270d24055f57dd5c05365caa8` |
+| Register leaf component (component 1) | `0xa7e6da4a02cd6e96be3931aa76c35021754012f78437fedf718819a99aa6e505` | FINALIZED, MAJORITY_AGREE |
+| Register parent component (component 2) | `0xac796137a918996e8af63d2155ecb586069adcfa2959c766625c1694368ce0cc` | FINALIZED, MAJORITY_AGREE |
+| Add parent `2` -> child `1` | `0x4166781466ff62fb5cc7334c57adaf87a9094425916770f4e7339fa2adb0e93e` | FINALIZED, MAJORITY_AGREE |
+| Create canonical recall (recall 1) | `0x7a5e7e02fcfa147e10590df39350d325dda0b40d918150419e0d5754a3997762` | FINALIZED, MAJORITY_AGREE |
+| Seal canonical recall | `0xd748740e45d7b80ba6396315c1b9c965f40bab3ce7f7666f078f8ca5fc507a3c` | FINALIZED, MAJORITY_AGREE; graph frozen |
 | Register leaf component (component 1) | `0xb59833633b42cdeb7423b454043bb59be81b37b3d5b795bc446ab23a0a477d77` | FINALIZED, MAJORITY_AGREE, return `1` |
 | Register parent component (component 2) | `0xe9dbe553c3dbd85c66c40eff884dd1844f7e628e5e902f4170a810b7a489d444` | FINALIZED, MAJORITY_AGREE, return `2` |
 | Add parent `2` -> child `1` | `0x699567de17cef88e76e655100fb83f77f6c9662a3358c9c3304e59d65e41c612` | FINALIZED, MAJORITY_AGREE |
@@ -24,7 +29,8 @@ with SHA-256
 The source is real public evidence, but the validator sandbox refusal means it
 was not adjudicated live and must not be described as a completed recall proof.
 
-The old address and its writes are historical only. The new canonical
-deployment is source-parity verified, but applicability, propagation, and
-clearance remain NOT PROVEN because the validator web boundary must permit the
-authoritative source fetch for a successful semantic assessment.
+The previous canonical address and its writes are historical only. The new
+canonical lifecycle above has fresh evidence: two components, parent/child
+relation `[2]` for leaf `1`, recall `1`, and `graph_frozen=true`. Semantic
+applicability, propagation, and clearance remain BLOCKED EXTERNALLY if the
+validator web boundary rejects the authoritative source fetch.
