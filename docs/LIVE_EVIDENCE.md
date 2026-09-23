@@ -11,6 +11,12 @@ Canonical deployment: `0x393D5D20538c8eAb18576eBC63aaAFfd42e1Fa84`
 | Create NHTSA-backed recall (recall 1) | `0x403e00234497ad282136c47050700b1ccbb454375db4f3f1115ff66ff2e8f41a` | FINALIZED, MAJORITY_AGREE, return `1` |
 | Seal recall 1 | `0xbd81a5b186f937bb9c5f496d8d0d192c82e76678edf63fc17cb776f08b070579` | NOT PROVEN: validator web boundary returned `SystemError: 6: forbidden`; contract did not advance the recall |
 
+Post-write canonical reads were also verified: `stats()` returned
+`components=2`, `recalls=1`, `graph_frozen=false`; `get_parents(1)` returned
+`[2]`; both components reported `active_recall_count=0`; and `get_recall(1)`
+reported `status=1 (DRAFT)`, confirming the failed seal did not partially mutate
+the recall.
+
 The NHTSA API response used for the recall record was captured locally at
 `https://api.nhtsa.gov/recalls/recallsByVehicle?make=Toyota&model=Camry&modelYear=2020`
 with SHA-256
