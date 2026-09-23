@@ -23,10 +23,11 @@ def test_release_is_derived_from_active_recall_count():
     assert "== 0" in block
 
 
-def test_clearance_is_deliberately_fail_closed_until_proven():
+def test_clearance_recomputes_and_reconciles_per_recall():
     block = SOURCE[SOURCE.index("def finalize_clearance"):SOURCE.index("@gl.public.view", SOURCE.index("def finalize_clearance"))]
-    assert "requires completed Direct Mode proof" in block
-    assert "raise gl.vm.UserError" in block
+    assert "_recompute_reached" in block
+    assert "recall_active[key] = False" in block
+    assert "active recall count invariant violated" in block
 
 
 def test_no_backend_or_fake_deployment_constants_in_contract():

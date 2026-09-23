@@ -1,2 +1,4 @@
-contract_dir: contracts
-test_dir: tests/direct
+paths:
+  contracts: contracts
+  artifacts: artifacts
+environment: local

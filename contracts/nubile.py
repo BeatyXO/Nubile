@@ -197,6 +197,7 @@ class NUBILE(gl.Contract):
     recall_seen: TreeMap[str, bool]
     recall_active: TreeMap[str, bool]
     direct_finding: TreeMap[str, u8]
+    clearance_finding: TreeMap[str, u8]
     finding_reason: TreeMap[str, str]
     finding_source_hash: TreeMap[str, str]
 
@@ -485,10 +486,26 @@ class NUBILE(gl.Contract):
         result = self._semantic(component, recall, True)
         if str(result["verdict"]) != "CLEARED":
             return str(result["verdict"])
-        # Clearance recomputation is intentionally deferred to finalize_clearance,
-        # which recomputes this recall's reached set deterministically.
-        self.direct_finding[key] = u8(VERDICT_NOT_AFFECTED)
+        self.clearance_finding[key] = u8(CLEARANCE_CLEARED)
         return "CLEARED"
+
+    def _recompute_reached(self, recall_id: int) -> dict:
+        reached = {}
+        pending = []
+        for component_id in range(1, int(self.component_count) + 1):
+            key = self._cause_key(recall_id, component_id)
+            if (int(self.direct_finding.get(key, u8(0))) == VERDICT_AFFECTED
+                    and int(self.clearance_finding.get(key, u8(0))) != CLEARANCE_CLEARED):
+                pending.append(component_id)
+        while pending:
+            current = pending.pop()
+            if current in reached:
+                continue
+            reached[current] = True
+            for parent_id in self._parents(current):
+                if parent_id not in reached:
+                    pending.append(parent_id)
+        return reached
 
     @gl.public.write
     def finalize_clearance(self, recall_id: u256) -> dict:
@@ -497,10 +514,38 @@ class NUBILE(gl.Contract):
             raise gl.vm.UserError("only recall creator may finalize clearance")
         if int(recall.status) != RECALL_CLEARING:
             raise gl.vm.UserError("recall is not clearing")
-        # A full final implementation should prove no remaining direct AFFECTED
-        # findings, then deterministically deactivate this recall on every seen node.
-        # Kept explicit rather than pretending an unverified partial algorithm is safe.
-        raise gl.vm.UserError("clearance finalization requires completed Direct Mode proof before activation")
+        reached = self._recompute_reached(int(recall_id))
+        removed = 0
+        kept = 0
+        for component_id in range(1, int(self.component_count) + 1):
+            key = self._cause_key(int(recall_id), component_id)
+            active = bool(self.recall_active.get(key, False))
+            if active and component_id not in reached:
+                self.recall_active[key] = False
+                component = self._component(u256(component_id))
+                count = int(component.active_recall_count)
+                if count <= 0:
+                    raise gl.vm.UserError("active recall count invariant violated")
+                component.active_recall_count = u16(count - 1)
+                removed += 1
+            elif active:
+                kept += 1
+        recall.queue_head = u32(0)
+        recall.queue_tail = u32(0)
+        recall.impacted_count = u32(0)
+        for component_id in range(1, int(self.component_count) + 1):
+            self.recall_seen[self._cause_key(int(recall_id), component_id)] = False
+        for component_id in reached:
+            key = self._cause_key(int(recall_id), component_id)
+            if bool(self.recall_active.get(key, False)):
+                recall.impacted_count = u32(int(recall.impacted_count) + 1)
+        for component_id in range(1, int(self.component_count) + 1):
+            key = self._cause_key(int(recall_id), component_id)
+            if (int(self.direct_finding.get(key, u8(0))) == VERDICT_AFFECTED
+                    and int(self.clearance_finding.get(key, u8(0))) != CLEARANCE_CLEARED):
+                self._enqueue_once(recall, component_id)
+        recall.status = u8(RECALL_CLEARED)
+        return {"removed": removed, "kept": kept, "reachable": len(reached), "complete": True}
 
     @gl.public.view
     def get_component(self, component_id: u256) -> dict:
