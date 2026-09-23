@@ -1,0 +1,2 @@
+contract_dir: contracts
+test_dir: tests/direct

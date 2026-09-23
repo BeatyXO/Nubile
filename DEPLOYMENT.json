@@ -1,0 +1,11 @@
+{
+  "canonicalStatus": "UNDEPLOYED",
+  "network": "studionet",
+  "contract": null,
+  "deploymentTransaction": null,
+  "sourceCommit": null,
+  "sourceSha256": null,
+  "deployedSourceVerified": false,
+  "schemaVerified": false,
+  "note": "Intentionally blank until a real finalized StudioNet deployment and source-parity proof exist."
+}

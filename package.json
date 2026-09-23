@@ -1,0 +1,17 @@
+{
+  "name": "nubile",
+  "private": true,
+  "type": "module",
+  "workspaces": ["frontend"],
+  "scripts": {
+    "dev": "npm --workspace frontend run dev",
+    "build": "npm --workspace frontend run build",
+    "lint": "npm --workspace frontend run lint",
+    "test:frontend": "npm --workspace frontend run test",
+    "verify": "npm run lint && npm run test:frontend && npm run build",
+    "deploy": "genlayer deploy"
+  },
+  "devDependencies": {
+    "genlayer-js": "^1.1.8"
+  }
+}
