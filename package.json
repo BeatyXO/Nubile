@@ -8,7 +8,8 @@
     "build": "npm --workspace frontend run build",
     "lint": "npm --workspace frontend run lint",
     "test:frontend": "npm --workspace frontend run test",
-    "verify": "npm run lint && npm run test:frontend && npm run build",
+    "verify:deployment": "python scripts/verify_deployment.py",
+    "verify": "npm run lint && npm run test:frontend && npm run build && npm run verify:deployment",
     "deploy": "genlayer deploy"
   },
   "devDependencies": {
