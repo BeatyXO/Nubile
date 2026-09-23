@@ -73,3 +73,106 @@ def test_direct_semantic_assessment_and_bounded_propagation(direct_vm, direct_de
     contract.propagate(recall, 8)
     assert contract.get_component(parent)["active_recall_count"] == 1
     assert contract.can_release(parent) is False
+
+
+def test_direct_duplicate_external_key_reverts(direct_vm, direct_deploy, direct_alice):
+    contract = direct_deploy("contracts/nubile.py")
+    direct_vm.sender = direct_alice
+    contract.register_component("duplicate-key", "One", "part", "id=1")
+    with direct_vm.expect_revert("external_key already exists"):
+        contract.register_component("duplicate-key", "Two", "part", "id=2")
+
+
+def test_direct_transitive_dag_edge_is_allowed(direct_vm, direct_deploy, direct_alice):
+    contract = direct_deploy("contracts/nubile.py")
+    direct_vm.sender = direct_alice
+    root = contract.register_component("root", "Root", "product", "r")
+    middle = contract.register_component("middle", "Middle", "assembly", "m")
+    leaf = contract.register_component("leaf", "Leaf", "part", "l")
+    contract.add_containment(root, middle)
+    contract.add_containment(middle, leaf)
+    contract.add_containment(root, leaf)
+    assert contract.get_children(root) == [middle, leaf]
+
+
+def test_direct_unavailable_source_fails_closed(direct_vm, direct_deploy, direct_alice):
+    contract = direct_deploy("contracts/nubile.py")
+    direct_vm.sender = direct_alice
+    component = contract.register_component("unavailable", "Unit", "part", "u")
+    digest = hashlib.sha256(b"source").hexdigest()
+    recall = contract.create_recall("Unavailable", "https://api.nhtsa.gov/unavailable", digest, "u")
+    contract.seal_recall(recall)
+    direct_vm.mock_web("api.nhtsa.gov/unavailable", {"status": 503, "body": ""})
+    with direct_vm.expect_revert():
+        contract.assess_component(recall, component)
+    assert contract.get_finding(recall, component)["verdict"] == 0
+
+
+def test_direct_digest_mismatch_fails_closed(direct_vm, direct_deploy, direct_alice):
+    contract = direct_deploy("contracts/nubile.py")
+    direct_vm.sender = direct_alice
+    component = contract.register_component("mismatch", "Unit", "part", "m")
+    recall = contract.create_recall("Mismatch", "https://api.nhtsa.gov/mismatch", "0" * 64, "m")
+    contract.seal_recall(recall)
+    direct_vm.mock_web("api.nhtsa.gov/mismatch", {"status": 200, "body": "wrong bytes"})
+    with direct_vm.expect_revert():
+        contract.assess_component(recall, component)
+    assert contract.can_release(component) is True
+
+
+def test_direct_not_affected_is_not_a_cause(direct_vm, direct_deploy, direct_alice):
+    contract = direct_deploy("contracts/nubile.py")
+    direct_vm.sender = direct_alice
+    component = contract.register_component("outside", "Unit", "part", "outside")
+    body = b"outside"
+    digest = hashlib.sha256(body).hexdigest()
+    recall = contract.create_recall("Outside", "https://api.nhtsa.gov/outside", digest, "outside")
+    contract.seal_recall(recall)
+    direct_vm.mock_web("api.nhtsa.gov/outside", {"status": 200, "body": body})
+    direct_vm.mock_llm("Return strict JSON", '{"verdict":"NOT_AFFECTED","reason":"outside"}')
+    assert contract.assess_component(recall, component) == "NOT_AFFECTED"
+    assert contract.can_release(component) is True
+
+
+def test_direct_inconclusive_is_not_a_cause(direct_vm, direct_deploy, direct_alice):
+    contract = direct_deploy("contracts/nubile.py")
+    direct_vm.sender = direct_alice
+    component = contract.register_component("ambiguous", "Unit", "part", "ambiguous")
+    body = b"ambiguous"
+    recall = contract.create_recall("Ambiguous", "https://api.nhtsa.gov/ambiguous", hashlib.sha256(body).hexdigest(), "ambiguous")
+    contract.seal_recall(recall)
+    direct_vm.mock_web("api.nhtsa.gov/ambiguous", {"status": 200, "body": body})
+    direct_vm.mock_llm("Return strict JSON", '{"verdict":"INCONCLUSIVE","reason":"ambiguous"}')
+    assert contract.assess_component(recall, component) == "INCONCLUSIVE"
+    assert contract.can_release(component) is True
+
+
+def test_direct_clearance_requires_completed_propagation(direct_vm, direct_deploy, direct_alice):
+    contract = direct_deploy("contracts/nubile.py")
+    direct_vm.sender = direct_alice
+    component = contract.register_component("clear-gate", "Unit", "part", "c")
+    digest = hashlib.sha256(b"clear").hexdigest()
+    recall = contract.create_recall("Clear gate", "https://api.nhtsa.gov/clear", digest, "c")
+    contract.seal_recall(recall)
+    direct_vm.mock_web("api.nhtsa.gov/clear", {"status": 200, "body": b"clear"})
+    direct_vm.mock_llm("Return strict JSON", '{"verdict":"AFFECTED","reason":"exact"}')
+    contract.assess_component(recall, component)
+    with direct_vm.expect_revert("initial propagation must complete"):
+        contract.set_clearance_bulletin(recall, "https://api.nhtsa.gov/clear-later", digest)
+    assert component == 1
+
+
+def test_direct_repeated_propagation_is_idempotent(direct_vm, direct_deploy, direct_alice):
+    contract = direct_deploy("contracts/nubile.py")
+    direct_vm.sender = direct_alice
+    component = contract.register_component("repeat", "Unit", "part", "r")
+    body = b"repeat"
+    recall = contract.create_recall("Repeat", "https://api.nhtsa.gov/repeat", hashlib.sha256(body).hexdigest(), "r")
+    contract.seal_recall(recall)
+    direct_vm.mock_web("api.nhtsa.gov/repeat", {"status": 200, "body": body})
+    direct_vm.mock_llm("Return strict JSON", '{"verdict":"AFFECTED","reason":"exact"}')
+    contract.assess_component(recall, component)
+    first = contract.propagate(recall, 64)
+    second = contract.propagate(recall, 64)
+    assert first["complete"] is True and second["complete"] is True
+    assert contract.get_component(component)["active_recall_count"] == 1

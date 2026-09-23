@@ -316,7 +316,7 @@ class NUBILE(gl.Contract):
             if isinstance(raw, str):
                 raw = json.loads(raw)
             if not isinstance(raw, dict):
-                raise Exception("invalid model shape")
+                raise gl.vm.UserError("invalid model shape")
             verdict = str(raw.get("verdict", "")).upper()
             allowed = ("CLEARED", "STILL_AFFECTED", "INCONCLUSIVE") if clearance else ("AFFECTED", "NOT_AFFECTED", "INCONCLUSIVE")
             if verdict not in allowed:

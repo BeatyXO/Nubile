@@ -18,7 +18,7 @@ NUBILE is one Intelligent Contract plus a reviewer/operator frontend. There is n
 
 ## Status
 
-The canonical contract is deployed on StudioNet and source-parity verified. Deterministic registration, BOM creation, recall creation, public reads, and frontend finality handling are implemented. The semantic lifecycle remains explicitly limited by the StudioNet validator web boundary: the attempted authoritative NHTSA fetch failed closed with `SystemError: 6: forbidden`. See `docs/LIVE_EVIDENCE.md` and `docs/SUBMISSION.md` for the exact evidence and remaining unproven paths.
+The canonical contract is deployed on StudioNet at `0x18D0f312C127542Ca443f8f065c679B5938b7de3` and source-parity verified. The live Vercel reviewer frontend is [nubile-psi.vercel.app](https://nubile-psi.vercel.app/). A fresh deterministic lifecycle (registration, BOM, recall creation and sealing) is proven live; the real semantic assessment attempt failed closed without activating a cause because validator source access was not proven. See `docs/LIVE_EVIDENCE.md` and `docs/SUBMISSION.md`.
 
 ## Visual system
 
@@ -33,7 +33,7 @@ frontend/                    Next.js product interface
 docs/ARCHITECTURE.md         protocol design and invariants
 docs/TEST_PLAN.md            adversarial verification plan
 docs/CODEX_HANDOFF.md        exact remaining work
-DEPLOYMENT.json              deliberately unclaimed until real deployment
+  DEPLOYMENT.json              canonical StudioNet deployment and parity evidence
 ```
 
 ## Quality rule

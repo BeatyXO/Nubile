@@ -12,6 +12,7 @@ import {
 type Stats = { components: number; recalls: number };
 type ComponentRecord = { component_id:number; name:string; kind:string; external_key:string; definition:string; active_recall_count:number; graph_locked:boolean };
 type RecallRecord = { recall_id:number; title:string; bulletin_url:string; bulletin_sha256:string; status:number; queue_head:number; queue_tail:number; directly_affected_count:number; impacted_count:number; clearance_cursor:number };
+type Finding = { verdict:number; active_cause:boolean; reason:string };
 type View = "overview" | "component" | "bom" | "recall" | "operations";
 
 function shortAddress(address: string) {
@@ -31,6 +32,7 @@ export function NubileApp() {
   const [components, setComponents] = useState<ComponentRecord[]>([]);
   const [recalls, setRecalls] = useState<RecallRecord[]>([]);
   const [relations, setRelations] = useState<Record<number, {parents:number[];children:number[]}>>({});
+  const [findings, setFindings] = useState<Record<string, Finding>>({});
   const workspaceRef = useRef<HTMLElement>(null);
 
   function navigate(next: View) {
@@ -51,7 +53,11 @@ export function NubileApp() {
       }
       const loadedRecalls: RecallRecord[] = [];
       for (let id = 1; id <= nextStats.recalls; id += 1) loadedRecalls.push(await readContract<RecallRecord>("get_recall", [id]));
-      setComponents(loadedComponents); setRelations(loadedRelations); setRecalls(loadedRecalls);
+      const loadedFindings: Record<string, Finding> = {};
+      for (const recall of loadedRecalls) for (const component of loadedComponents) {
+        loadedFindings[`${recall.recall_id}:${component.component_id}`] = await readContract<Finding>("get_finding", [recall.recall_id, component.component_id]);
+      }
+      setComponents(loadedComponents); setRelations(loadedRelations); setRecalls(loadedRecalls); setFindings(loadedFindings);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to read StudioNet state.");
     }
@@ -164,11 +170,11 @@ export function NubileApp() {
               <span className="status-pill">{status}</span>
             </div>
             <div className="panel-body">
-              {view === "overview" && <Overview configured={configured} components={components} recalls={recalls} relations={relations}/>} 
+              {view === "overview" && <Overview configured={configured} components={components} recalls={recalls} relations={relations} findings={findings}/>} 
               {view === "component" && <ComponentForm configured={configured} busy={busy} onSubmit={write}/>}
               {view === "bom" && <BomForm configured={configured} busy={busy} onSubmit={write}/>}
               {view === "recall" && <RecallForm configured={configured} busy={busy} onSubmit={write}/>}
-              {view === "operations" && <OperationsForm configured={configured} busy={busy} onSubmit={write}/>} 
+              {view === "operations" && <OperationsForm configured={configured} busy={busy} recalls={recalls} onSubmit={write}/>} 
               {txState === "pending" && <div className="notice">Transaction submitted; waiting for StudioNet finality and successful GenVM execution. This is not yet a successful write.</div>}
               {txHash && txState === "success" && <div className="tx">Finalized successfully: <a href={explorerTx(txHash)} target="_blank" rel="noreferrer">{txHash}</a></div>}
             </div>
@@ -184,7 +190,14 @@ export function NubileApp() {
   );
 }
 
-function Overview({ configured, components, recalls, relations }: { configured:boolean; components:ComponentRecord[]; recalls:RecallRecord[]; relations:Record<number,{parents:number[];children:number[]}> }) {
+function recallStatus(status:number) { return ({1:"DRAFT",2:"ACTIVE",3:"CLEARING",4:"CLEARED"} as Record<number,string>)[status] ?? "UNKNOWN"; }
+function findingLabel(finding: Finding | undefined) {
+  if (!finding || finding.verdict === 0) return "NO DIRECT FINDING";
+  if (finding.verdict === 1) return finding.active_cause ? "DIRECT AFFECTED · ACTIVE CAUSE" : "DIRECT AFFECTED";
+  return finding.verdict === 2 ? "NOT AFFECTED" : "INCONCLUSIVE";
+}
+
+function Overview({ configured, components, recalls, relations, findings }: { configured:boolean; components:ComponentRecord[]; recalls:RecallRecord[]; relations:Record<number,{parents:number[];children:number[]}>; findings:Record<string, Finding> }) {
   return (
     <div className="empty">
       <div className="empty-inner">
@@ -199,10 +212,11 @@ function Overview({ configured, components, recalls, relations }: { configured:b
           {components.map((component) => <div key={component.component_id} className="notice" style={{marginBottom:8}}>
             <strong>#{component.component_id} {component.name}</strong> · {component.kind} · {component.active_recall_count ? "QUARANTINED" : "RELEASE ELIGIBLE"}<br/>
             <small>Parents: {(relations[component.component_id]?.parents ?? []).join(", ") || "—"} · Children: {(relations[component.component_id]?.children ?? []).join(", ") || "—"} · {component.graph_locked ? "graph locked" : "graph open"}</small>
+            {recalls.map((recall) => <small key={`${recall.recall_id}:${component.component_id}`} style={{display:"block"}}>Recall {recall.recall_id}: {findingLabel(findings[`${recall.recall_id}:${component.component_id}`])}</small>)}
           </div>)}
           {recalls.map((recall) => <div key={recall.recall_id} className="notice" style={{marginBottom:8}}>
-            <strong>Recall #{recall.recall_id}: {recall.title}</strong> · status {recall.status} · impacted {recall.impacted_count}<br/>
-            <small>Source: {recall.bulletin_url} · SHA-256: {recall.bulletin_sha256} · propagation {recall.queue_head}/{recall.queue_tail} · clearance {recall.clearance_cursor}</small>
+            <strong>Recall #{recall.recall_id}: {recall.title}</strong> · {recallStatus(recall.status)} · impacted {recall.impacted_count}<br/>
+            <small>Source: {recall.bulletin_url} · SHA-256: {recall.bulletin_sha256} · propagation {recall.queue_head}/{recall.queue_tail} · direct roots {recall.directly_affected_count} · clearance cursor {recall.clearance_cursor}</small>
           </div>)}
         </div>}
       </div>
@@ -255,20 +269,32 @@ function BomForm({ configured, busy, onSubmit }: { configured:boolean; busy:bool
   </form>;
 }
 
-function OperationsForm({ configured, busy, onSubmit }: { configured:boolean; busy:boolean; onSubmit:(fn:string,args:unknown[])=>Promise<void> }) {
+function OperationsForm({ configured, busy, recalls, onSubmit }: { configured:boolean; busy:boolean; recalls:RecallRecord[]; onSubmit:(fn:string,args:unknown[])=>Promise<void> }) {
   const [recall,setRecall]=useState(""); const [component,setComponent]=useState(""); const [steps,setSteps]=useState("16");
+  const [clearanceUrl,setClearanceUrl]=useState(""); const [clearanceHash,setClearanceHash]=useState(""); const [clearanceResult,setClearanceResult]=useState("");
   const id=Number(recall); const cid=Number(component);
+  const selected = recalls.find((item) => item.recall_id === id);
+  const validId = (value:number) => Number.isInteger(value) && value > 0;
+  const submit = (fn:string, args:unknown[]) => { if (!validId(id) || (fn === "clear_direct_component" || fn === "assess_component") && !validId(cid)) return; void onSubmit(fn,args); };
   return <div className="form-grid">
     {!configured && <div className="notice full">No contract is configured. Reads and writes remain truthful and empty.</div>}
     <div className="field"><label>Recall ID</label><input type="number" min="1" value={recall} onChange={e=>setRecall(e.target.value)} required/></div>
     <div className="field"><label>Component ID</label><input type="number" min="1" value={component} onChange={e=>setComponent(e.target.value)} required/></div>
     <div className="field"><label>Propagation steps (1–64)</label><input type="number" min="1" max="64" value={steps} onChange={e=>setSteps(e.target.value)} required/></div>
     <div className="form-footer full" style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-      <button className="primary" disabled={!configured||busy} onClick={()=>void onSubmit("seal_recall",[id])}>Seal recall</button>
-      <button className="secondary" disabled={!configured||busy} onClick={()=>void onSubmit("assess_component",[id,cid])}>Assess component</button>
-      <button className="secondary" disabled={!configured||busy} onClick={()=>void onSubmit("propagate",[id,Number(steps)])}>Propagate cursor</button>
-      <button className="secondary" disabled={!configured||busy} onClick={()=>void onSubmit("finalize_clearance",[id,Number(steps)])}>Finalize clearance</button>
+      <button className="primary" disabled={!configured||busy||!validId(id)} onClick={()=>submit("seal_recall",[id])}>Seal recall</button>
+      <button className="secondary" disabled={!configured||busy||!validId(id)||!validId(cid)} onClick={()=>submit("assess_component",[id,cid])}>Assess component</button>
+      <button className="secondary" disabled={!configured||busy||!validId(id)} onClick={()=>submit("propagate",[id,Number(steps)])}>Propagate cursor</button>
     </div>
+    <div className="field full"><label>Clearance bulletin HTTPS URL</label><input type="url" value={clearanceUrl} onChange={e=>setClearanceUrl(e.target.value)} placeholder="https://authoritative.example/clearance" /></div>
+    <div className="field"><label>Clearance SHA-256</label><input value={clearanceHash} onChange={e=>setClearanceHash(e.target.value)} pattern="[a-fA-F0-9]{64}" placeholder="64 hex characters" /></div>
+    <div className="field"><label>Clear direct affected component</label><input type="number" min="1" value={component} onChange={e=>setComponent(e.target.value)} placeholder="Component ID" /></div>
+    <div className="form-footer full" style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+      <button className="secondary" disabled={!configured||busy||!validId(id)||!/^https:\/\//.test(clearanceUrl)||!/^[a-fA-F0-9]{64}$/.test(clearanceHash)} onClick={()=>submit("set_clearance_bulletin",[id,clearanceUrl,clearanceHash])}>Set clearance bulletin</button>
+      <button className="secondary" disabled={!configured||busy||!validId(id)||!validId(cid)} onClick={async()=>{ if (!validId(id)||!validId(cid)) return; setClearanceResult("submitted"); await onSubmit("clear_direct_component",[id,cid]); }}>Clear direct component</button>
+      {selected?.status === 3 && <button className="secondary" disabled={!configured||busy||!validId(id)} onClick={()=>submit("finalize_clearance",[id,Number(steps)])}>Continue clearance reconciliation</button>}
+    </div>
+    <div className="notice full">{selected ? `Recall ${selected.recall_id} is ${recallStatus(selected.status)} · propagation ${selected.queue_head}/${selected.queue_tail} · clearance cursor ${selected.clearance_cursor} · direct roots ${selected.directly_affected_count} · impacted ${selected.impacted_count}` : "Select a recall ID to load clearance progress."}{clearanceResult && ` · ${clearanceResult}`}</div>
     <div className="notice full"><ShieldCheck size={14} style={{display:"inline",marginRight:8,verticalAlign:-2}}/>Assessment is consensus-backed; graph traversal and release remain deterministic contract operations.</div>
   </div>;
 }

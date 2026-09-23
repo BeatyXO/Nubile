@@ -1,5 +1,9 @@
 # Vercel deployment
 
+Live app: https://nubile-psi.vercel.app/
+
+The frontend is live and reads the canonical StudioNet deployment below.
+
 Deploy the `frontend` directory as the project root.
 
 - Root Directory: `frontend`
