@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity, Box, Boxes, CircleAlert, GitBranch, Network, Plus, Radar,
-  ShieldCheck, Sparkles, Wallet, Waypoints
+  Check, Copy, LogOut, ShieldCheck, Sparkles, Wallet, Waypoints
 } from "lucide-react";
 import {
   connectWallet, contractConfigured, explorerTx, readContract, submitAndReconcile, type WalletClient
@@ -24,6 +24,8 @@ export function NubileApp() {
   const [view, setView] = useState<View>("overview");
   const [address, setAddress] = useState("");
   const [client, setClient] = useState<WalletClient | null>(null);
+  const [walletMenuOpen, setWalletMenuOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState("");
   const [txHash, setTxHash] = useState("");
@@ -67,6 +69,10 @@ export function NubileApp() {
 
   async function handleWallet() {
     setError("");
+    if (address) {
+      setWalletMenuOpen((open) => !open);
+      return;
+    }
     try {
       const connected = await connectWallet();
       setAddress(connected.address);
@@ -74,6 +80,24 @@ export function NubileApp() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Wallet connection failed.");
     }
+  }
+
+  async function copyAddress() {
+    if (!address) return;
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setError("Unable to copy wallet address.");
+    }
+  }
+
+  function disconnectWallet() {
+    setAddress("");
+    setClient(null);
+    setWalletMenuOpen(false);
+    setCopied(false);
   }
 
   async function write(functionName: string, args: unknown[]) {
@@ -110,10 +134,21 @@ export function NubileApp() {
             <button onClick={() => navigate("recall")}>Recalls</button>
             <a href="https://github.com/BeatyXO/Nubile" target="_blank" rel="noreferrer" style={{color:"inherit",textDecoration:"none"}}>GitHub</a>
           </nav>
-          <button className="wallet" onClick={handleWallet}>
-            <Wallet size={14} style={{display:"inline",marginRight:7,verticalAlign:-2}}/>
-            {address ? shortAddress(address) : "Connect wallet"}
-          </button>
+          <div className="wallet-wrap">
+            <button className="wallet" onClick={() => void handleWallet()} aria-expanded={address ? walletMenuOpen : undefined} aria-haspopup={address ? "menu" : undefined}>
+              <Wallet size={14} style={{display:"inline",marginRight:7,verticalAlign:-2}}/>
+              {address ? shortAddress(address) : "Connect wallet"}
+            </button>
+            {address && walletMenuOpen && <div className="wallet-menu" role="menu">
+              <div className="wallet-menu-address" title={address}>{shortAddress(address)}</div>
+              <button className="wallet-menu-item" onClick={() => void copyAddress()} role="menuitem">
+                {copied ? <Check size={15}/> : <Copy size={15}/>} {copied ? "Copied" : "Copy address"}
+              </button>
+              <button className="wallet-menu-item disconnect" onClick={disconnectWallet} role="menuitem">
+                <LogOut size={15}/> Disconnect
+              </button>
+            </div>}
+          </div>
         </div>
       </header>
 

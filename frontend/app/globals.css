@@ -70,6 +70,23 @@ button, input, textarea { font: inherit; }
   font-weight:700;
 }
 .wallet:hover { background:rgba(234,255,88,.13); }
+.wallet-wrap { position:relative; }
+.wallet-menu {
+  position:absolute; right:0; top:calc(100% + 10px); width:190px; padding:7px;
+  border:1px solid var(--line); border-radius:14px; background:#21112f;
+  box-shadow:0 16px 40px rgba(0,0,0,.35); z-index:40;
+}
+.wallet-menu-address {
+  padding:8px 10px 9px; color:var(--muted); font-size:11px; border-bottom:1px solid var(--line);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.wallet-menu-item {
+  width:100%; display:flex; align-items:center; gap:9px; border:0; border-radius:9px;
+  padding:10px; margin-top:4px; background:transparent; color:var(--text); text-align:left;
+  cursor:pointer; font-size:12px;
+}
+.wallet-menu-item:hover { background:rgba(255,255,255,.07); }
+.wallet-menu-item.disconnect { color:#ff9be3; }
 
 .hero {
   padding: 68px 0 30px;
