@@ -18,7 +18,7 @@ NUBILE is one Intelligent Contract plus a reviewer/operator frontend. There is n
 
 ## Status
 
-The canonical contract is deployed on StudioNet at `0x18D0f312C127542Ca443f8f065c679B5938b7de3` and source-parity verified. The live Vercel reviewer frontend is [nubile-psi.vercel.app](https://nubile-psi.vercel.app/). A fresh deterministic lifecycle (registration, BOM, recall creation and sealing) is proven live; the real semantic assessment attempt failed closed without activating a cause because validator source access was not proven. See `docs/LIVE_EVIDENCE.md` and `docs/SUBMISSION.md`.
+The canonical contract is deployed on StudioNet at `0xc53ea93EC011C4f8a54495bF6825e330f8475e00` and source-parity verified. The live Vercel reviewer frontend is [nubile-psi.vercel.app](https://nubile-psi.vercel.app/). A fresh deterministic lifecycle (registration, BOM, recall creation and sealing) is proven live; the real semantic assessment attempt failed closed without activating a cause because validator source access was not proven. See `docs/LIVE_EVIDENCE.md` and `docs/SUBMISSION.md`.
 
 ## Visual system
 

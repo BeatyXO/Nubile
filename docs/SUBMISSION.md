@@ -15,7 +15,7 @@
 | Direct Mode contract behavior | `tests/direct/test_direct_mode.py` | PROVEN DIRECT (11 passed) |
 | Static source inspection suite | `tests/direct/test_pure_helpers.py` | PROVEN STATIC (18 passed) |
 | StudioNet deployment | `DEPLOYMENT.json`, `docs/LIVE_EVIDENCE.md` | PROVEN LIVE |
-| Callable schema and source parity | `genlayer code/schema`, SHA-256 `d93cd0089abf2e359c1c4a125db9378c224658b270d24055f57dd5c05365caa8` | PROVEN LIVE |
+| Callable schema and source parity | `genlayer code/schema`, SHA-256 `70d2acb782f83106e6555f92138d0bb65581c153db36ed55f9ce465d64b9635e` | PROVEN LIVE |
 | Canonical deterministic lifecycle | Fresh hashes in `docs/LIVE_EVIDENCE.md` | PROVEN LIVE |
 | Semantic assessment attempt | Assessment tx and fail-closed reads | PROVEN DIRECT |
 | Live semantic assessment | Validator-accessible authoritative source requirement | BLOCKED EXTERNALLY / FAIL-CLOSED ATTEMPT |
