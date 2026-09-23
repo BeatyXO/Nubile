@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity, Box, Boxes, CircleAlert, GitBranch, Network, Plus, Radar,
   ShieldCheck, Sparkles, Wallet, Waypoints
@@ -31,6 +31,12 @@ export function NubileApp() {
   const [components, setComponents] = useState<ComponentRecord[]>([]);
   const [recalls, setRecalls] = useState<RecallRecord[]>([]);
   const [relations, setRelations] = useState<Record<number, {parents:number[];children:number[]}>>({});
+  const workspaceRef = useRef<HTMLElement>(null);
+
+  function navigate(next: View) {
+    setView(next);
+    window.requestAnimationFrame(() => workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
 
   async function refresh() {
     if (!configured) return;
@@ -92,10 +98,10 @@ export function NubileApp() {
             NUBILE
           </div>
           <nav className="nav">
-            <button onClick={() => setView("overview")}>Protocol</button>
-            <button onClick={() => setView("component")}>Components</button>
-            <button onClick={() => setView("bom")}>BOM</button>
-            <button onClick={() => setView("recall")}>Recalls</button>
+            <button onClick={() => navigate("overview")}>Protocol</button>
+            <button onClick={() => navigate("component")}>Components</button>
+            <button onClick={() => navigate("bom")}>BOM</button>
+            <button onClick={() => navigate("recall")}>Recalls</button>
             <a href="https://github.com/BeatyXO/Nubile" target="_blank" rel="noreferrer" style={{color:"inherit",textDecoration:"none"}}>GitHub</a>
           </nav>
           <button className="wallet" onClick={handleWallet}>
@@ -106,7 +112,7 @@ export function NubileApp() {
       </header>
 
       <main className="wrap">
-        <section className="hero">
+        {view === "overview" && <section className="hero">
           <div>
             <div className="eyebrow"><Sparkles size={13}/> GenLayer recall intelligence</div>
             <h1>Trace the <span className="accent">impact.</span><br/>Contain the risk.</h1>
@@ -116,8 +122,8 @@ export function NubileApp() {
               an AI invent a path, quarantine a product, or release one.
             </p>
             <div className="actions">
-              <button className="primary" onClick={() => setView("component")}><Plus size={15} style={{display:"inline",marginRight:7,verticalAlign:-2}}/>Register component</button>
-              <button className="secondary" onClick={() => setView("recall")}><Radar size={15} style={{display:"inline",marginRight:7,verticalAlign:-2}}/>Open recall</button>
+              <button className="primary" onClick={() => navigate("component")}><Plus size={15} style={{display:"inline",marginRight:7,verticalAlign:-2}}/>Register component</button>
+              <button className="secondary" onClick={() => navigate("recall")}><Radar size={15} style={{display:"inline",marginRight:7,verticalAlign:-2}}/>Open recall</button>
             </div>
           </div>
           <div className="protocol-card" aria-label="Illustrative NUBILE containment graph">
@@ -128,25 +134,25 @@ export function NubileApp() {
             <div className="node n4"><small>derived state</small><strong>Release gate</strong></div>
             <div className="legend">Illustrative protocol topology — not live chain data</div>
           </div>
-        </section>
+        </section>}
 
-        <section className="stats">
+        {view === "overview" && <section className="stats">
           <div className="stat"><span>Registered components</span><strong className="lemon">{stats?.components ?? "—"}</strong></div>
           <div className="stat"><span>Recall records</span><strong className="pink">{stats?.recalls ?? "—"}</strong></div>
           <div className="stat"><span>Network</span><strong style={{fontSize:17}}>StudioNet · 61999</strong></div>
           <div className="stat"><span>Contract</span><strong style={{fontSize:17}}>{configured ? "Configured" : "Not deployed"}</strong></div>
-        </section>
+        </section>}
 
         {error && <div className="notice"><CircleAlert size={14} style={{display:"inline",marginRight:8,verticalAlign:-2}}/>{error}</div>}
 
-        <section className="workspace">
+        <section className={`workspace ${view !== "overview" ? "workspace-focused" : ""}`} ref={workspaceRef}>
           <aside className="sidebar">
             <div className="side-title">Workspace</div>
-            <button className={`side-btn ${view === "overview" ? "active":""}`} onClick={() => setView("overview")}><Activity size={15}/>Overview</button>
-            <button className={`side-btn ${view === "component" ? "active":""}`} onClick={() => setView("component")}><Boxes size={15}/>Register component</button>
-            <button className={`side-btn ${view === "bom" ? "active":""}`} onClick={() => setView("bom")}><GitBranch size={15}/>BOM relation</button>
-            <button className={`side-btn ${view === "recall" ? "active":""}`} onClick={() => setView("recall")}><Radar size={15}/>Create recall</button>
-            <button className={`side-btn ${view === "operations" ? "active":""}`} onClick={() => setView("operations")}><ShieldCheck size={15}/>Assess & propagate</button>
+            <button className={`side-btn ${view === "overview" ? "active":""}`} onClick={() => navigate("overview")}><Activity size={15}/>Overview</button>
+            <button className={`side-btn ${view === "component" ? "active":""}`} onClick={() => navigate("component")}><Boxes size={15}/>Register component</button>
+            <button className={`side-btn ${view === "bom" ? "active":""}`} onClick={() => navigate("bom")}><GitBranch size={15}/>BOM relation</button>
+            <button className={`side-btn ${view === "recall" ? "active":""}`} onClick={() => navigate("recall")}><Radar size={15}/>Create recall</button>
+            <button className={`side-btn ${view === "operations" ? "active":""}`} onClick={() => navigate("operations")}><ShieldCheck size={15}/>Assess & propagate</button>
           </aside>
 
           <section className="mainpanel">
