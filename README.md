@@ -18,7 +18,7 @@ NUBILE is one Intelligent Contract plus a reviewer/operator frontend. There is n
 
 ## Status
 
-Groundwork implementation. **No canonical StudioNet deployment is claimed yet.** See `docs/CODEX_HANDOFF.md` for the remaining runtime verification, deployment, and live-proof work.
+The canonical contract is deployed on StudioNet and source-parity verified. Deterministic registration, BOM creation, recall creation, public reads, and frontend finality handling are implemented. The semantic lifecycle remains explicitly limited by the StudioNet validator web boundary: the attempted authoritative NHTSA fetch failed closed with `SystemError: 6: forbidden`. See `docs/LIVE_EVIDENCE.md` and `docs/SUBMISSION.md` for the exact evidence and remaining unproven paths.
 
 ## Visual system
 

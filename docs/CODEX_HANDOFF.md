@@ -1,5 +1,14 @@
 # Codex completion handoff
 
+## Current verified state
+
+The exact contract source is deployed and parity-verified on StudioNet. See
+`DEPLOYMENT.json` and `docs/LIVE_EVIDENCE.md`. Local gates pass: 14 contract
+static checks, 5 frontend tests, TypeScript, and production build. The live
+seal attempt failed closed at the validator web boundary (`SystemError: 6:
+forbidden`) when fetching the NHTSA API source, so no applicability or
+propagation result is claimed.
+
 This repository contains the architecture, product UI, contract groundwork, wallet plumbing, deterministic helper tests, CI scaffold, and documentation. Finish the repository in place; do not redesign NUBILE into a generic AI evidence app.
 
 ## Required completion work
