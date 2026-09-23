@@ -8,7 +8,7 @@ The model never decides which ancestor assemblies are quarantined, how many acti
 
 ## State model
 
-A **component** has immutable identifying metadata and a creator. A component can contain child components through directed BOM edges. Edges are admitted only while both nodes are unlocked and must never introduce a cycle.
+A **component** has immutable identifying metadata and a creator. A component can contain child components through directed BOM edges. Edges are admitted only while both nodes are unlocked and must never introduce a cycle. In the v1 safety model, the entire BOM topology freezes when the first recall is sealed so a permissionless propagation cursor cannot be influenced by edges introduced halfway through adjudication.
 
 A **recall** freezes a title, bulletin URL, expected bulletin SHA-256, applicability rule, and creator. It moves through:
 
