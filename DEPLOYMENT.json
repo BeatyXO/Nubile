@@ -1,14 +1,20 @@
 {
   "canonicalStatus": "FINALIZED",
   "network": "studionet",
-  "contract": "0x393D5D20538c8eAb18576eBC63aaAFfd42e1Fa84",
-  "deploymentTransaction": "0x12c7f33abcd89d4cc4c08828355899b4763a4cbe8b84cb96b18360f7c86c7dca",
-  "sourceCommit": "cfcba5e418c3514c59bae1aa727f349a9569136d",
-  "sourceSha256": "c14048700df41bb72083b28815d5c73f08385c64f6c81149ef3bddbec6bdf1bf",
+  "contract": "0x53D66e8f27DE1ef60120a51eF78F2d38f81422d9",
+  "deploymentTransaction": "0x7b7baecaa4957515361dde769d1d74aac9a7f9e9b7cc9e10b00c004465d64bac",
+  "sourceCommit": "6dfcbd81d120a593766907d3c3dec375385371d4",
+  "sourceSha256": "599cf6f9c3c0c576fce638d2be73fa3ddcdb2e94a9407af79642ebd043b80e95",
   "deployedSourceVerified": true,
   "schemaVerified": true,
   "validatorCount": 5,
   "deploymentResult": "MAJORITY_AGREE",
   "genvmExecution": "SUCCESS",
-  "note": "Verified from the StudioNet deployment receipt and getContractCode/getContractSchema parity checks."
+  "historicalDeployments": [{
+    "contract": "0x393D5D20538c8eAb18576eBC63aaAFfd42e1Fa84",
+    "deploymentTransaction": "0x12c7f33abcd89d4cc4c08828355899b4763a4cbe8b84cb96b18360f7c86c7dca",
+    "sourceCommit": "cfcba5e418c3514c59bae1aa727f349a9569136d",
+    "sourceSha256": "c14048700df41bb72083b28815d5c73f08385c64f6c81149ef3bddbec6bdf1bf"
+  }],
+  "note": "Verified from the StudioNet deployment receipt and exact deployed-source/schema parity checks."
 }
