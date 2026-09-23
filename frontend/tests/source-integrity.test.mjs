@@ -23,3 +23,10 @@ test("StudioNet chain id is pinned", () => {
   assert.match(client, /CHAIN_ID = 61999/);
   assert.match(client, /CHAIN_HEX = "0xf22f"/);
 });
+
+test("writes reconcile finality before claiming success", () => {
+  assert.match(client, /waitForTransactionReceipt/);
+  assert.match(client, /status !== "FINALIZED"/);
+  assert.match(client, /FINISHED_WITH_RETURN/);
+  assert.match(app, /waiting for StudioNet finality/);
+});

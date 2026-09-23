@@ -6,7 +6,7 @@ import {
   ShieldCheck, Sparkles, Wallet, Waypoints
 } from "lucide-react";
 import {
-  connectWallet, contractConfigured, explorerTx, readContract, submitContract, type WalletClient
+  connectWallet, contractConfigured, explorerTx, readContract, submitAndReconcile, type WalletClient
 } from "@/lib/genlayer";
 
 type Stats = { components: number; recalls: number };
@@ -24,6 +24,7 @@ export function NubileApp() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState("");
   const [txHash, setTxHash] = useState("");
+  const [txState, setTxState] = useState<"idle" | "pending" | "success" | "failed">("idle");
   const [busy, setBusy] = useState(false);
 
   async function refresh() {
@@ -53,12 +54,13 @@ export function NubileApp() {
       setError("Connect an injected wallet before submitting a write.");
       return;
     }
-    setBusy(true); setError(""); setTxHash("");
+    setBusy(true); setError(""); setTxHash(""); setTxState("pending");
     try {
-      const hash = await submitContract(client, functionName, args);
-      setTxHash(hash);
+      const result = await submitAndReconcile(client, functionName, args);
+      setTxHash(result.hash); setTxState("success");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Transaction submission failed.");
+      setTxState("failed");
+      setError(e instanceof Error ? e.message : "Transaction failed before finality.");
     } finally {
       setBusy(false);
     }
@@ -141,7 +143,8 @@ export function NubileApp() {
               {view === "overview" && <Overview configured={configured}/>}
               {view === "component" && <ComponentForm configured={configured} busy={busy} onSubmit={write}/>}
               {view === "recall" && <RecallForm configured={configured} busy={busy} onSubmit={write}/>}
-              {txHash && <div className="tx">Submitted transaction: <a href={explorerTx(txHash)} target="_blank" rel="noreferrer">{txHash}</a>. NUBILE does not label it successful until StudioNet finality is checked.</div>}
+              {txState === "pending" && <div className="notice">Transaction submitted; waiting for StudioNet finality and successful GenVM execution. This is not yet a successful write.</div>}
+              {txHash && txState === "success" && <div className="tx">Finalized successfully: <a href={explorerTx(txHash)} target="_blank" rel="noreferrer">{txHash}</a></div>}
             </div>
           </section>
         </section>

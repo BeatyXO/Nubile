@@ -6,5 +6,6 @@ frontend/.next
 __pycache__
 .pytest_cache
 *.pyc
+*.tsbuildinfo
 .DS_Store
 coverage

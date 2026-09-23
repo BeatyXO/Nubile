@@ -79,6 +79,30 @@ export async function submitContract(client: WalletClient, functionName: string,
   return hash;
 }
 
+export type ReconciledTransaction = {
+  hash: string;
+  status: string;
+  result: string;
+  execution: string;
+};
+
+export async function submitAndReconcile(client: WalletClient, functionName: string, args: unknown[] = []): Promise<ReconciledTransaction> {
+  const hash = await submitContract(client, functionName, args);
+  const receipt = await client.waitForTransactionReceipt({
+    hash: hash as never,
+    status: "FINALIZED" as never,
+    interval: 3000,
+    retries: 100,
+  });
+  const status = String(receipt.statusName ?? receipt.status ?? "UNKNOWN");
+  const result = String(receipt.resultName ?? receipt.result ?? "UNKNOWN");
+  const execution = String(receipt.txExecutionResultName ?? receipt.txExecutionResult ?? "UNKNOWN");
+  if (status !== "FINALIZED" || result !== "MAJORITY_AGREE" || execution !== "FINISHED_WITH_RETURN") {
+    throw new Error(`StudioNet rejected the transaction: status=${status}, result=${result}, execution=${execution}.`);
+  }
+  return { hash, status, result, execution };
+}
+
 export function explorerTx(hash: string) {
   return `${EXPLORER_BASE}/tx/${hash}`;
 }
