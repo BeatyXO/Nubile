@@ -10,7 +10,7 @@ import {
 } from "@/lib/genlayer";
 
 type Stats = { components: number; recalls: number };
-type View = "overview" | "component" | "recall";
+type View = "overview" | "component" | "bom" | "recall" | "operations";
 
 function shortAddress(address: string) {
   return address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "";
@@ -79,6 +79,7 @@ export function NubileApp() {
           <nav className="nav">
             <button onClick={() => setView("overview")}>Protocol</button>
             <button onClick={() => setView("component")}>Components</button>
+            <button onClick={() => setView("bom")}>BOM</button>
             <button onClick={() => setView("recall")}>Recalls</button>
             <a href="https://github.com/BeatyXO/Nubile" target="_blank" rel="noreferrer" style={{color:"inherit",textDecoration:"none"}}>GitHub</a>
           </nav>
@@ -128,21 +129,25 @@ export function NubileApp() {
             <div className="side-title">Workspace</div>
             <button className={`side-btn ${view === "overview" ? "active":""}`} onClick={() => setView("overview")}><Activity size={15}/>Overview</button>
             <button className={`side-btn ${view === "component" ? "active":""}`} onClick={() => setView("component")}><Boxes size={15}/>Register component</button>
+            <button className={`side-btn ${view === "bom" ? "active":""}`} onClick={() => setView("bom")}><GitBranch size={15}/>BOM relation</button>
             <button className={`side-btn ${view === "recall" ? "active":""}`} onClick={() => setView("recall")}><Radar size={15}/>Create recall</button>
+            <button className={`side-btn ${view === "operations" ? "active":""}`} onClick={() => setView("operations")}><ShieldCheck size={15}/>Assess & propagate</button>
           </aside>
 
           <section className="mainpanel">
             <div className="panel-head">
               <div>
-                <h2>{view === "overview" ? "Containment graph" : view === "component" ? "Register a component" : "Freeze a recall bulletin"}</h2>
-                <p>{view === "overview" ? "Chain state appears here after the canonical deployment is configured." : view === "component" ? "Create immutable unit identity before linking BOM edges." : "Pin exact bulletin bytes before semantic applicability can be assessed."}</p>
+                <h2>{view === "overview" ? "Containment graph" : view === "component" ? "Register a component" : view === "bom" ? "Create BOM relation" : view === "recall" ? "Freeze a recall bulletin" : "Assess, propagate & release"}</h2>
+                <p>{view === "overview" ? "Chain state appears here after the canonical deployment is configured." : view === "component" ? "Create immutable unit identity before linking BOM edges." : view === "bom" ? "Edges are parent → child and freeze when the first recall is sealed." : view === "recall" ? "Pin exact bulletin bytes before semantic applicability can be assessed." : "Only the contract decides findings, causes, propagation, and release eligibility."}</p>
               </div>
               <span className="status-pill">{status}</span>
             </div>
             <div className="panel-body">
               {view === "overview" && <Overview configured={configured}/>}
               {view === "component" && <ComponentForm configured={configured} busy={busy} onSubmit={write}/>}
+              {view === "bom" && <BomForm configured={configured} busy={busy} onSubmit={write}/>}
               {view === "recall" && <RecallForm configured={configured} busy={busy} onSubmit={write}/>}
+              {view === "operations" && <OperationsForm configured={configured} busy={busy} onSubmit={write}/>} 
               {txState === "pending" && <div className="notice">Transaction submitted; waiting for StudioNet finality and successful GenVM execution. This is not yet a successful write.</div>}
               {txHash && txState === "success" && <div className="tx">Finalized successfully: <a href={explorerTx(txHash)} target="_blank" rel="noreferrer">{txHash}</a></div>}
             </div>
@@ -208,4 +213,31 @@ function RecallForm({ configured, busy, onSubmit }: { configured:boolean; busy:b
       </form>
     </>
   );
+}
+
+function BomForm({ configured, busy, onSubmit }: { configured:boolean; busy:boolean; onSubmit:(fn:string,args:unknown[])=>Promise<void> }) {
+  const [parent,setParent]=useState(""); const [child,setChild]=useState("");
+  return <form onSubmit={(e)=>{e.preventDefault(); if(configured) void onSubmit("add_containment",[Number(parent),Number(child)]);}}>
+    {!configured && <div className="notice">Connect a verified contract before creating graph state.</div>}
+    <div className="form-grid"><div className="field"><label>Parent component ID</label><input type="number" min="1" value={parent} onChange={e=>setParent(e.target.value)} required/></div><div className="field"><label>Child component ID</label><input type="number" min="1" value={child} onChange={e=>setChild(e.target.value)} required/></div></div>
+    <div className="form-footer"><button className="primary" disabled={!configured||busy}>{busy ? "Submitting…" : "Add containment edge"}</button></div>
+  </form>;
+}
+
+function OperationsForm({ configured, busy, onSubmit }: { configured:boolean; busy:boolean; onSubmit:(fn:string,args:unknown[])=>Promise<void> }) {
+  const [recall,setRecall]=useState(""); const [component,setComponent]=useState(""); const [steps,setSteps]=useState("16");
+  const id=Number(recall); const cid=Number(component);
+  return <div className="form-grid">
+    {!configured && <div className="notice full">No contract is configured. Reads and writes remain truthful and empty.</div>}
+    <div className="field"><label>Recall ID</label><input type="number" min="1" value={recall} onChange={e=>setRecall(e.target.value)} required/></div>
+    <div className="field"><label>Component ID</label><input type="number" min="1" value={component} onChange={e=>setComponent(e.target.value)} required/></div>
+    <div className="field"><label>Propagation steps (1–64)</label><input type="number" min="1" max="64" value={steps} onChange={e=>setSteps(e.target.value)} required/></div>
+    <div className="form-footer full" style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+      <button className="primary" disabled={!configured||busy} onClick={()=>void onSubmit("seal_recall",[id])}>Seal recall</button>
+      <button className="secondary" disabled={!configured||busy} onClick={()=>void onSubmit("assess_component",[id,cid])}>Assess component</button>
+      <button className="secondary" disabled={!configured||busy} onClick={()=>void onSubmit("propagate",[id,Number(steps)])}>Propagate cursor</button>
+      <button className="secondary" disabled={!configured||busy} onClick={()=>void onSubmit("finalize_clearance",[id])}>Finalize clearance</button>
+    </div>
+    <div className="notice full"><ShieldCheck size={14} style={{display:"inline",marginRight:8,verticalAlign:-2}}/>Assessment is consensus-backed; graph traversal and release remain deterministic contract operations.</div>
+  </div>;
 }
