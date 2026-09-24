@@ -10,10 +10,14 @@ export const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "")
 export const readClient = createClient({ chain: studionet });
 export type WalletClient = ReturnType<typeof createClient>;
 
+const WALLET_DISCONNECT_KEY = "nubile.wallet.disconnected";
+
 declare global {
   interface Window {
     ethereum?: {
       request(args: { method: string; params?: unknown[] | object }): Promise<unknown>;
+      on?(event: string, listener: (...args: unknown[]) => void): void;
+      removeListener?(event: string, listener: (...args: unknown[]) => void): void;
     };
   }
 }
@@ -49,6 +53,33 @@ export async function ensureStudioNet(provider: NonNullable<Window["ethereum"]>)
   }
 }
 
+function setManualDisconnect(disconnected: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    if (disconnected) window.localStorage.setItem(WALLET_DISCONNECT_KEY, "1");
+    else window.localStorage.removeItem(WALLET_DISCONNECT_KEY);
+  } catch {
+    // Storage can be unavailable in hardened/private browser contexts.
+  }
+}
+
+export function rememberWalletDisconnect() {
+  setManualDisconnect(true);
+}
+
+function manualDisconnectRequested() {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(WALLET_DISCONNECT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function walletSession(provider: NonNullable<Window["ethereum"]>, address: `0x${string}`) {
+  return { address, client: createClient({ chain: studionet, account: address, provider }) };
+}
+
 export async function connectWallet() {
   const provider = window.ethereum;
   if (!provider) throw new Error("No injected EIP-1193 wallet found.");
@@ -56,7 +87,19 @@ export async function connectWallet() {
   const address = Array.isArray(accounts) ? accounts.find(validAddress) : undefined;
   if (!address) throw new Error("Wallet did not expose a valid account.");
   await ensureStudioNet(provider);
-  return { address, client: createClient({ chain: studionet, account: address, provider }) };
+  setManualDisconnect(false);
+  return walletSession(provider, address);
+}
+
+export async function restoreWalletConnection() {
+  if (typeof window === "undefined" || manualDisconnectRequested()) return null;
+  const provider = window.ethereum;
+  if (!provider) return null;
+  const accounts = await provider.request({ method: "eth_accounts" });
+  const address = Array.isArray(accounts) ? accounts.find(validAddress) : undefined;
+  if (!address) return null;
+  await ensureStudioNet(provider);
+  return walletSession(provider, address);
 }
 
 export async function readContract<T>(functionName: string, args: unknown[] = []): Promise<T> {
