@@ -11,7 +11,7 @@ A public recall bulletin can describe affected models, lots, revisions, producti
 - **App:** https://nubile-psi.vercel.app/
 - **GitHub:** https://github.com/BeatyXO/Nubile
 - **Network:** GenLayer StudioNet
-- **Canonical contract:** `0xc53ea93EC011C4f8a54495bF6825e330f8475e00`
+- **Canonical contract:** `0x4Be082dDab5aFeC8985b19b016E71cDB84e415fe`
 - **Deployment tx:** `0xb4f6f2f245d39184cc4eb9bee6886170ffb9c00c0378ee78506dbabafcdfa526`
 - **Deployed source SHA-256:** `70d2acb782f83106e6555f92138d0bb65581c153db36ed55f9ce465d64b9635e`
 

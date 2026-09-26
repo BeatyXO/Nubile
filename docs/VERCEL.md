@@ -15,7 +15,7 @@ Deploy the `frontend` directory as the project root.
 Required public variables:
 
 ```text
-NEXT_PUBLIC_CONTRACT_ADDRESS=0xc53ea93EC011C4f8a54495bF6825e330f8475e00
+NEXT_PUBLIC_CONTRACT_ADDRESS=0x4Be082dDab5aFeC8985b19b016E71cDB84e415fe
 NEXT_PUBLIC_EXPLORER_BASE=https://explorer-studio.genlayer.com
 ```
 
