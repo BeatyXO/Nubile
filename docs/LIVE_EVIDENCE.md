@@ -2,28 +2,28 @@
 
 ## Current canonical deployment
 
-Contract: `0xc53ea93EC011C4f8a54495bF6825e330f8475e00`
+Contract: `0x4Be082dDab5aFeC8985b19b016E71cDB84e415fe`
 
-Deployment source commit: `7932e021611cb7bc5f48b59072a61b84887588f6`
+Deployment source commit: `87e5bc396d405bc32228596ed3b5809fa2d899dd`
 
-Source SHA-256: `70d2acb782f83106e6555f92138d0bb65581c153db36ed55f9ce465d64b9635e`
+Source SHA-256: `4305d730d670ee0b7ec568e8e3865bad9befce943130247e12ca164224eb4a82`
 
 | Operation | Transaction | Observed result |
 |---|---|---|
-| Deploy exact `contracts/nubile.py` | `0xb4f6f2f245d39184cc4eb9bee6886170ffb9c00c0378ee78506dbabafcdfa526` | FINALIZED, MAJORITY_AGREE, GenVM SUCCESS; deployed source/schema parity verified |
-| Register component 1 | `0x8da6cef19c23aa423e09ad77e1b8dd746b02df8af37c8f6ff5db04598ded520f` | FINALIZED, component 1 |
-| Register component 2 | `0x16a04f9c162dd1dd84397a7a747b69d9561c2143c3e1aeb1aa14f38433a5ca60` | FINALIZED, component 2 |
-| Add parent 2 → child 1 | `0x079ffc29f2e769c2a8c7ec58d4c85c7273c57e57e534484bd010bebfa26fcdf2` | FINALIZED, MAJORITY_AGREE |
-| Create recall 1 | `0x3deacf2dc1ca232608e7e139e173f6e7a21326b17f9dddb4e98321b8b4cec20a` | FINALIZED, recall 1 |
-| Seal recall 1 | `0xcc44aa0d7a6a79a9e49057738409d7dc79d2dce7e6f82fe1b5e12bd31602c0c8` | FINALIZED |
+| Deploy exact `contracts/nubile.py` | `0x93b9a25a7d7d594b6ad32e87e7cf9759ba48ae40dde3db82e7a0d2a880014e9a` | FINALIZED, 5/5 validators agree, GenVM SUCCESS |
+| Register component 1 | `0xe9e66a788f85a82137d28db122413d78b178f78ad5b76cf50d42186257b8af72` | FINALIZED, component 1 |
+| Create recall 1 | `0x8347096c676c2f154e26c80043e5b0e8fe38ffdd7b022d384f79fa79d541795b` | FINALIZED, authority-controlled recall 1 |
+| Seal recall 1 | `0x8246c013be80b546c0f056b2d5b5f082880dc0d7c693781c4ad05231d636af9d` | FINALIZED, source hash verified by validator consensus |
+| Assess component 1 | `0x7152d7781f5b6ad1f49296316cf88bb91ba98dab4206341d72a780ba0a5d9f1a` | FINALIZED, validator-backed `AFFECTED`, source hash bound |
+| Propagate recall 1 | `0x40e7dfe3d6ab99c0f802170d102e8a62ea33ff19b9142cf48cb48a6803ac14b6` | FINALIZED, queue complete, impacted count 1 |
 
 Fresh post-seal reads on this canonical address:
 
-- `stats()` → `components=2`, `recalls=1`, `graph_frozen=true`
-- `get_parents(1)` → `[2]`
-- `get_recall(1)` → `status=2 (ACTIVE)`, queue `0/0`, impacted `0`, with the frozen authoritative URL and SHA-256
+- `stats()` → `components=1`, `recalls=1`, `graph_frozen=true`
+- `get_finding(1,1)` → `verdict=1 (AFFECTED)`, `active_cause=true`, source hash `5ed45bc7a6de116ad93fa048074d88e3a96967d7336bf6bc2828e0538b403759`
+- `get_recall(1)` → `status=2 (ACTIVE)`, `source_verified=true`, queue `1/1`, impacted `1`
 
-This proves the current deployment's deterministic lifecycle through recall sealing. No semantic success is claimed for the current canonical address without a completed validator-backed authoritative-source assessment.
+This proves the hardened authority gate, validator-backed source verification and applicability assessment, deterministic propagation, and post-write state readback on the current canonical address.
 
 ## Historical semantic attempt
 
