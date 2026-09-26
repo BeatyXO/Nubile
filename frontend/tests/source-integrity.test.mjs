@@ -30,3 +30,21 @@ test("writes reconcile finality before claiming success", () => {
   assert.match(client, /FINISHED_WITH_RETURN/);
   assert.match(app, /waiting for StudioNet finality/);
 });
+
+
+test("wallet session restores from previously authorized accounts after refresh", () => {
+  assert.match(client, /eth_accounts/);
+  assert.match(client, /restoreWalletConnection/);
+  assert.match(app, /restoreWalletConnection/);
+});
+
+test("manual disconnect suppresses automatic reconnect", () => {
+  assert.match(client, /nubile\.wallet\.disconnected/);
+  assert.match(client, /manualDisconnectRequested/);
+  assert.match(app, /rememberWalletDisconnect/);
+});
+
+test("wallet account changes are synchronized without another connect prompt", () => {
+  assert.match(app, /accountsChanged/);
+  assert.match(app, /removeListener/);
+});

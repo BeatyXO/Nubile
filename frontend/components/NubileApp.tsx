@@ -6,7 +6,8 @@ import {
   Check, Copy, LogOut, ShieldCheck, Sparkles, Wallet, Waypoints
 } from "lucide-react";
 import {
-  connectWallet, contractConfigured, explorerTx, readContract, submitAndReconcile, type WalletClient
+  connectWallet, contractConfigured, explorerTx, readContract, rememberWalletDisconnect,
+  restoreWalletConnection, submitAndReconcile, type WalletClient
 } from "@/lib/genlayer";
 
 type Stats = { components: number; recalls: number };
@@ -67,6 +68,37 @@ export function NubileApp() {
 
   useEffect(() => { void refresh(); }, [configured]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const provider = window.ethereum;
+
+    async function syncWallet() {
+      try {
+        const restored = await restoreWalletConnection();
+        if (cancelled) return;
+        if (restored) {
+          setAddress(restored.address);
+          setClient(restored.client);
+        } else {
+          setAddress("");
+          setClient(null);
+          setWalletMenuOpen(false);
+        }
+      } catch {
+        // Silent restoration must never block the public read-only app.
+      }
+    }
+
+    void syncWallet();
+    const handleAccountsChanged = () => { void syncWallet(); };
+    provider?.on?.("accountsChanged", handleAccountsChanged);
+
+    return () => {
+      cancelled = true;
+      provider?.removeListener?.("accountsChanged", handleAccountsChanged);
+    };
+  }, []);
+
   async function handleWallet() {
     setError("");
     if (address) {
@@ -94,6 +126,7 @@ export function NubileApp() {
   }
 
   function disconnectWallet() {
+    rememberWalletDisconnect();
     setAddress("");
     setClient(null);
     setWalletMenuOpen(false);
