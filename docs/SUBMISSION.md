@@ -19,8 +19,8 @@ Canonical StudioNet contract: `0x4Be082dDab5aFeC8985b19b016E71cDB84e415fe`
 | Frontend no-fake state | `NubileApp.tsx`, source-integrity tests | PROVEN STATIC |
 | Transaction finality reconciliation | `submitAndReconcile`, frontend tests | PROVEN STATIC |
 | Real recall corpus | `fixtures/recalls/MANIFEST.md`, checked-in NHTSA capture | PROVEN STATIC (fixture capture; not live adjudication) |
-| Direct Mode contract behavior | `tests/direct/test_direct_mode.py` | PROVEN DIRECT (14 tests) |
-| Static source inspection suite | `tests/direct/test_pure_helpers.py` | PROVEN STATIC (19 tests) |
+| Direct Mode contract behavior | `tests/direct/test_direct_mode.py` | PROVEN DIRECT (14 tests; 33 passed total) |
+| Static source inspection suite | `tests/direct/test_pure_helpers.py` | PROVEN STATIC (19 tests; 33 passed total) |
 | StudioNet deployment | `DEPLOYMENT.json`, `docs/LIVE_EVIDENCE.md` | PROVEN LIVE |
 | Callable schema and source parity | `genlayer code/schema`, SHA-256 `4305d730d670ee0b7ec568e8e3865bad9befce943130247e12ca164224eb4a82` | PROVEN LIVE |
 | Canonical deterministic lifecycle | Fresh canonical hashes in `docs/LIVE_EVIDENCE.md` | PROVEN LIVE |
@@ -29,9 +29,8 @@ Canonical StudioNet contract: `0x4Be082dDab5aFeC8985b19b016E71cDB84e415fe`
 
 ## Quality gates
 
-- Real Direct Mode: **11 passed**
-- Static contract checks: **18 passed**
-- Frontend tests: **5 passed**
+- Direct contract and static suite: **33 passed**
+- Frontend tests: **8 passed**
 - TypeScript: **passed**
 - Production build: **passed**
 - Deployment/source parity: **passed**

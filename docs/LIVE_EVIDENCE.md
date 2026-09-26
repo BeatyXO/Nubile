@@ -17,7 +17,7 @@ Source SHA-256: `4305d730d670ee0b7ec568e8e3865bad9befce943130247e12ca164224eb4a8
 | Assess component 1 | `0x7152d7781f5b6ad1f49296316cf88bb91ba98dab4206341d72a780ba0a5d9f1a` | FINALIZED, validator-backed `AFFECTED`, source hash bound |
 | Propagate recall 1 | `0x40e7dfe3d6ab99c0f802170d102e8a62ea33ff19b9142cf48cb48a6803ac14b6` | FINALIZED, queue complete, impacted count 1 |
 
-Fresh post-seal reads on this canonical address:
+Fresh post-propagation reads on this canonical address:
 
 - `stats()` → `components=1`, `recalls=1`, `graph_frozen=true`
 - `get_finding(1,1)` → `verdict=1 (AFFECTED)`, `active_cause=true`, source hash `5ed45bc7a6de116ad93fa048074d88e3a96967d7336bf6bc2828e0538b403759`
