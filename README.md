@@ -12,10 +12,10 @@ A public recall bulletin can describe affected models, lots, revisions, producti
 - **GitHub:** https://github.com/BeatyXO/Nubile
 - **Network:** GenLayer StudioNet
 - **Canonical contract:** `0x4Be082dDab5aFeC8985b19b016E71cDB84e415fe`
-- **Deployment tx:** `0xb4f6f2f245d39184cc4eb9bee6886170ffb9c00c0378ee78506dbabafcdfa526`
-- **Deployed source SHA-256:** `70d2acb782f83106e6555f92138d0bb65581c153db36ed55f9ce465d64b9635e`
+- **Deployment tx:** `0x93b9a25a7d7d594b6ad32e87e7cf9759ba48ae40dde3db82e7a0d2a880014e9a`
+- **Deployed source SHA-256:** `4305d730d670ee0b7ec568e8e3865bad9befce943130247e12ca164224eb4a82`
 
-The deployed contract is source/schema parity verified. A fresh deterministic lifecycle on the canonical address proves component registration, BOM containment, recall creation, recall sealing, and graph freeze. The authoritative-source semantic path is separately documented as fail-closed when live validator retrieval cannot complete.
+The deployed contract is source/schema parity verified. Live evidence on the canonical address includes component registration, validator-backed bulletin source verification, a successful applicability assessment, deterministic propagation, and post-write state readback. See `docs/LIVE_EVIDENCE.md` for transaction hashes and observed results.
 
 ## Why GenLayer
 
@@ -49,14 +49,13 @@ The model never chooses graph paths, quarantine arithmetic, release state, or ow
 3. Create the parent → child BOM relation.
 4. Create a recall using an allowed authoritative source, exact SHA-256, and applicability rule.
 5. Seal the recall and verify the graph freezes.
-6. Use **Assess & Propagate** for semantic assessment and bounded propagation when the authoritative source is validator-accessible.
+6. Use **Assess & Propagate** for validator-backed semantic assessment and bounded propagation.
 7. Review live component, recall, quarantine, release, and clearance state from the contract-backed UI.
 
 ## Verification snapshot
 
-- Real Direct Mode: **11 passed**
-- Static contract checks: **18 passed**
-- Frontend tests: **5 passed**
+- Direct contract and static suite: **33 passed**
+- Frontend tests: **8 passed**
 - TypeScript: **passed**
 - Production build: **passed**
 - Deployment/source parity: **passed**
